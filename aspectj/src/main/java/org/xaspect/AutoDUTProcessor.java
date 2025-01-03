@@ -1,23 +1,19 @@
 package org.xaspect;
 
-import com.google.auto.common.AnnotationMirrors;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.*;
-import org.checkerframework.checker.units.qual.A;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.PrimitiveType;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.StandardLocation;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
+import java.math.BigInteger;
 import java.util.*;
 
 @AutoService(Processor.class)
@@ -192,17 +188,20 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     ios.isIn = true;
                     String inputPrefix = withMethodPrefix;
 //                    ios.isPin = hasAnnotationSelf(params.get(0).getAnnotationMirrors(), Pin.class.getCanonicalName());
-                    ios.isPin = params.get(0).getAnnotation(Pin.class) != null;
+                    Annotation innerPinAnnotation = getAnnotationFromType(params.get(0).asType(), Pin.class);
+
+                    ios.isPin = innerPinAnnotation != null;
+                    Annotation innerBundleAnnotation = getAnnotationFromType(params.get(0).asType(), InBundle.class);
                     //更新前缀和unsigned设置
-                    if (params.get(0).getAnnotation(InBundle.class) != null) {
-                        inputPrefix += params.get(0).getAnnotation(InBundle.class).value();
-                        ios.coveringUnsigned = params.get(0).getAnnotation(InBundle.class).coveringUnsigned();
-                        ios.unsigned = params.get(0).getAnnotation(InBundle.class).unsigned();
-                    } else if (ios.isPin){
-                        inputPrefix += params.get(0).getAnnotation(Pin.class).value();
+                    if (innerBundleAnnotation != null) {
+                        InBundle inBundle = (InBundle) innerBundleAnnotation;
+                        inputPrefix += inBundle.value();
+                        ios.coveringUnsigned = inBundle.coveringUnsigned();
+                        ios.unsigned = inBundle.unsigned();
+                    } else if (innerPinAnnotation != null) {
+                        inputPrefix += ((Pin) innerPinAnnotation).value();
+                        ios.unsigned = ((Pin) innerPinAnnotation).unsigned();
                     }
-
-
 
                     List<String> inputsAssigns = constructIO(inputPrefix, getClassFromTypeMirror(params.get(0).asType()), instanceFieldName, inputBundleName, ios);
                     for (String inputAssign : inputsAssigns) {
@@ -217,15 +216,21 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     String outputPrefix = withMethodPrefix;
 
                     ios.isIn = false;
-                    ios.isPin = method.getReturnType().getAnnotation(Pin.class) != null;
-                    if (method.getReturnType().getAnnotation(OutBundle.class) != null){
-                        outputPrefix += method.getReturnType().getAnnotation(OutBundle.class).value();
-                        ios.coveringUnsigned = method.getReturnType().getAnnotation(OutBundle.class).coveringUnsigned();
-                        ios.unsigned = method.getReturnType().getAnnotation(OutBundle.class).unsigned();
-                    } else if (ios.isPin){
-                        outputPrefix += method.getReturnType().getAnnotation(Pin.class).value();
+                    Annotation outerPinAnnotation = getAnnotationFromType(method.getReturnType(), Pin.class);
+                    System.err.println(ios.isPin);
+                    Annotation outerBundleAnnotation = getAnnotationFromType(method.getReturnType(), OutBundle.class);
+                    if (outerBundleAnnotation != null) {
+                        OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
+                        outputPrefix += outerBundle.value();
+                        ios.coveringUnsigned = outerBundle.coveringUnsigned();
+                        ios.unsigned = outerBundle.unsigned();
+                    } else if (outerPinAnnotation != null){
+                        outputPrefix += ((Pin) outerPinAnnotation).value();
                     }
+                    ios.isPin = outerPinAnnotation != null;
+
                     String outerName = "ret" + inputBundleName.substring(0, 1).toUpperCase() + inputBundleName.substring(1);
+                    System.err.println(outerName);
                     List<String> outputAssigns = constructIO(outputPrefix, getClassFromTypeMirror(method.getReturnType()), instanceFieldName, outerName, ios);
 
                     for (String outputAssign : outputAssigns) {
@@ -258,37 +263,47 @@ public class AutoDUTProcessor extends AbstractProcessor {
         }
     }
 
-//    private boolean hasAnnotationSelf(List<? extends AnnotationMirror> mirrors, String annotationName) {
-//        for (AnnotationMirror mirror: mirrors){
-//            System.out.println(mirror.getAnnotationType().toString());
-//            if (mirror.getAnnotationType().toString().equals(annotationName)){
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
+    private Annotation getAnnotationFromType(TypeMirror type, Class<?> annotationClass) {
+        // 检查类型上的注解
+        for (AnnotationMirror annotationMirror : type.getAnnotationMirrors()) {
+            DeclaredType annotationType = annotationMirror.getAnnotationType();
+            Element annotationElement = annotationType.asElement();
+            if (annotationElement.toString().equals(annotationClass.getCanonicalName())) {
+                return type.getAnnotation((Class<? extends Annotation>) annotationClass); // 找到了目标注解，返回注解对象
+            }
+        }
+
+        // 如果是数组类型，递归检查组件类型
+        if (type.getKind() == TypeKind.ARRAY) {
+            ArrayType arrayType = (ArrayType) type;
+            return getAnnotationFromType(arrayType.getComponentType(), annotationClass);
+        }
+
+        return null; // 没有找到目标注解
+    }
+
 
     private List<String> constructIO(String pre, Class<?> dataClass, String insName, String IOName, IOParameters ioParameters) {
         String prefix = pre;
-
         //bundle类内生的prefix处理
         if (dataClass.isAnnotationPresent(Bundle.class)){
             prefix += dataClass.getAnnotation(Bundle.class).value();
         }
 
         List<String> rets = new ArrayList<>();
-        String typeName = dataClass.getName();
+        String typeName = dataClass.getTypeName();
         String fieldPrefix;
         fieldPrefix = IOName;
 
         //如果是输出，初始化待返回结果
-        if (!ioParameters.isIn) {
+        if ((!ioParameters.isIn) && (!ioParameters.isSon)) {
             String initializr = typeName + " " + fieldPrefix ;
-            if (!isInteger(dataClass) && !isLong(dataClass)) {
+            if (!ioParameters.isPin) {
                 initializr += " = new " + typeName + "()";
             }
             initializr += ";\n";
             rets.add(initializr);
+            System.err.println(initializr);
         }
 
         if (ioParameters.isPin) {
@@ -311,6 +326,13 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     String trueInsPin = "this." + insName + "." + prefix + pinName;
                     String dataWrapperVar = fieldPrefix + "." + varName;
                     rets.add(constructSingleAssignment(dataWrapperVar, pin.getType(), trueInsPin, ioParameters.isIn, unsignedPin));
+                } else if (pin.isAnnotationPresent(SubBundle.class)) {
+                    String subFieldName = fieldPrefix + "." + pin.getName();
+                    IOParameters subIOS = ioParameters.copy();
+                    subIOS.isSon = true;
+                    String pinPrefix = prefix + pin.getAnnotation(SubBundle.class).value();
+                    List<String> subreses = constructIO(pinPrefix, pin.getType(), insName, subFieldName, subIOS);
+                    rets.addAll(subreses);
                 }
             }
         }
@@ -341,6 +363,26 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 String getLongString = signedGet + ".longValue()";
                 return fieldFullName + " = " + pinFullName + "." + getLongString + ";\n";
             }
+        } else if (isByteArray(fieldType)){
+            if (isIn){
+                return pinFullName + ".Set(" + fieldFullName + ");\n";
+            } else {
+                return fieldFullName + " = " + pinFullName + ".GetBytes();\n";
+            }
+        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
+            if (isIn){
+                return pinFullName + ".Set(" + fieldFullName + ");\n";
+            } else {
+                return fieldFullName + " = " + pinFullName + ".String();\n";
+            }
+        } else if (fieldType.getCanonicalName().equals(BigInteger.class.getCanonicalName())){
+            if (isIn){
+                return pinFullName + ".Set(" + fieldFullName + ");\n";
+            } else {
+                String signedGet = unsigned? "U()": "S()";
+                return fieldFullName + " = " + pinFullName + "." + signedGet  + ";\n";
+            }
+
         }
 
         return "";
@@ -383,6 +425,13 @@ public class AutoDUTProcessor extends AbstractProcessor {
             } else if (typeMirror.getKind().isPrimitive()) {
                 // 处理原始类型
                 return getPrimitiveClass(typeMirror.getKind());
+            } else if (typeMirror.getKind() == TypeKind.ARRAY) {
+                // 处理数组类型
+                ArrayType arrayType = (ArrayType) typeMirror;
+                TypeMirror componentType = arrayType.getComponentType();
+                Class<?> componentClass = getClassFromTypeMirror(componentType);
+//                System.out.println(componentClass.getTypeName());
+                return java.lang.reflect.Array.newInstance(componentClass, 0).getClass();
             } else {
                 throw new IllegalArgumentException("Unsupported type: " + typeMirror);
             }
@@ -415,11 +464,23 @@ public class AutoDUTProcessor extends AbstractProcessor {
         }
     }
 
-    private class IOParameters{
+    private static class IOParameters{
         boolean isIn = true;
         boolean unsigned = true;
         boolean coveringUnsigned = false;
         boolean isPin = false;
+        boolean isSon = false;
+
+
+        public IOParameters copy() {
+            IOParameters cloned = new IOParameters();
+            cloned.coveringUnsigned = coveringUnsigned;
+            cloned.isIn = isIn;
+            cloned.unsigned = unsigned;
+            cloned.isPin = isPin;
+            cloned.isSon = isSon;
+            return cloned;
+        }
     }
 
 
