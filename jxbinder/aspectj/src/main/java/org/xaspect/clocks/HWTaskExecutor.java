@@ -12,10 +12,13 @@ import java.util.function.Consumer;
 public class HWTaskExecutor {
     private PriorityQueue<TaskInfo> taskQueue = new PriorityQueue<>();
 
-    XClock xclock;
+    private XClock xclock;
+
+    private DUTClockManager dutClockManager;
 
     public void bindClock(XClock clock) {
         this.xclock = clock;
+        this.dutClockManager = new DUTClockManager(clock);
     }
 
     public void submit(TaskFlow tasks) {
@@ -37,7 +40,8 @@ public class HWTaskExecutor {
                 task.run();
             }
 
-            xclock.Step();
+            dutClockManager.waitForSteps("111", 1);
+//            xclock.Step();
             stepCount+=1;
         }
     }

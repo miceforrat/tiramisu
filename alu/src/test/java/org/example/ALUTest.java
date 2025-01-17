@@ -1,4 +1,5 @@
 package org.example;
+import co.paralleluniverse.fibers.Fiber;
 import com.ut.UT_ALU;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -37,9 +38,7 @@ public class ALUTest {
         ALUIO in = new ALUIO();
 //        HWTaskExecutor executor = new HWTaskExecutor();
 //        executor.bindClock(alu.aluTestWrapper.getXClock());
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-//                int finalA = a;
+        //                int finalA = a;
 //                int finalB = b;
 //                executor.submit(executor.taskBuilder()
 //                        .adds(()->{
@@ -52,16 +51,30 @@ public class ALUTest {
 //                        .step().adds(()->{
 //                            assertEquals((finalA+finalB) & limit, alu.aluTestWrapper.getOut());
 //                        })
-//                        .cloneTasks(3)
 //                );
 //                executor.execute();
 
-                in.ab.a = a;
-                in.ab.b = b;
-                in.sel.sel = 0;
-                assertEquals((a+b) & limit, alu.process(in, 1));
-            }
-        }
+                    for (int a = 0; a < 256; a++) {
+                        for (int b = 0; b < 256; b++) {
+                            in.ab.a = a;
+                            in.ab.b = b;
+                            in.sel.sel = 0;
+                            int res = (a + b) & limit;
+                                        assertEquals(res,
+                                                alu.process(in, 1)
+                                        );
+//                        in.ab.a = a;
+
+//                        in.ab.b = b;
+//                        in.sel.sel = 0;
+//                        int res = (a + b) & limit;
+//                        assertEquals(res,
+//                                alu.process(in, 1)
+//                        );
+
+                        }
+                    }
+
 
 //        for (int a = 0; a < 256; a++){
 //            for (int b = 0; b < 256; b++){

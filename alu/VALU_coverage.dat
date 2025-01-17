@@ -53,7 +53,7 @@ C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/pi
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU.vl8n12pagev_toggle/ALUoresult[5]hTOP.ALU_top.ALU' 507246
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU.vl8n12pagev_toggle/ALUoresult[6]hTOP.ALU_top.ALU' 507498
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU.vl8n12pagev_toggle/ALUoresult[7]hTOP.ALU_top.ALU' 507649
-C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl27n17pagev_line/ALU_topoblockS27,29hTOP.ALU_top' 1048576
+C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl27n17pagev_line/ALU_topoblockS27,29hTOP.ALU_top' 2097152
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl3n15pagev_toggle/ALU_topoa[0]hTOP.ALU_top' 255
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl3n15pagev_toggle/ALU_topoa[1]hTOP.ALU_top' 128
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl3n15pagev_toggle/ALU_topoa[2]hTOP.ALU_top' 64
@@ -63,7 +63,7 @@ C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/pi
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl3n15pagev_toggle/ALU_topoa[6]hTOP.ALU_top' 4
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl3n15pagev_toggle/ALU_topoa[7]hTOP.ALU_top' 2
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl32n17pagev_line/ALU_topoblockS32,34hTOP.ALU_top' 256
-C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl37n17pagev_line/ALU_topoblockS37,39hTOP.ALU_top' 1048576
+C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl37n17pagev_line/ALU_topoblockS37,39hTOP.ALU_top' 2097152
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl4n15pagev_toggle/ALU_topob[0]hTOP.ALU_top' 65536
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl4n15pagev_toggle/ALU_topob[1]hTOP.ALU_top' 32767
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl4n15pagev_toggle/ALU_topob[2]hTOP.ALU_top' 16384
@@ -73,13 +73,13 @@ C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/pi
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl4n15pagev_toggle/ALU_topob[6]hTOP.ALU_top' 1025
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl4n15pagev_toggle/ALU_topob[7]hTOP.ALU_top' 511
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl42n17pagev_line/ALU_topoblockS42,44hTOP.ALU_top' 65536
-C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl47n17pagev_line/ALU_topoblockS47,49hTOP.ALU_top' 1048576
+C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl47n17pagev_line/ALU_topoblockS47,49hTOP.ALU_top' 2097152
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl5n15pagev_toggle/ALU_topoalu_sel[0]hTOP.ALU_top' 1048576
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl5n15pagev_toggle/ALU_topoalu_sel[1]hTOP.ALU_top' 524287
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl5n15pagev_toggle/ALU_topoalu_sel[2]hTOP.ALU_top' 262144
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl5n15pagev_toggle/ALU_topoalu_sel[3]hTOP.ALU_top' 131072
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl52n17pagev_line/ALU_topoblockS52,54hTOP.ALU_top' 1048576
-C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl57n17pagev_line/ALU_topoblockS57,59hTOP.ALU_top' 3145729
+C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl57n17pagev_line/ALU_topoblockS57,59hTOP.ALU_top' 5242881
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl6n15pagev_toggle/ALU_topoalu_out[0]hTOP.ALU_top' 508637
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl6n15pagev_toggle/ALU_topoalu_out[1]hTOP.ALU_top' 494056
 C 'f/home/cjh/works/verify/simple_cases/simple-verification-case/alu/xjunit/picker_out_alu/ALU_top.svl6n15pagev_toggle/ALU_topoalu_out[2]hTOP.ALU_top' 500198

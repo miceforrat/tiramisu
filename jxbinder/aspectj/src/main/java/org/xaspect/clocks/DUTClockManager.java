@@ -1,6 +1,7 @@
 package org.xaspect.clocks;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.FiberExecutorScheduler;
+import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.channels.Channel;
 import co.paralleluniverse.strands.channels.Channels;
 import co.paralleluniverse.strands.concurrent.CountDownLatch;
@@ -8,14 +9,17 @@ import co.paralleluniverse.strands.concurrent.Semaphore;
 import com.xspcomm.XClock;
 
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
 public class DUTClockManager {
     private final XClock xclock;
     private final ConcurrentMap<String, Semaphore> latchMap = new ConcurrentHashMap<>();
     private final Channel<String> taskChannel = Channels.newChannel(1); // 用于通知 Fiber 有新任务
     private volatile boolean running = true;
+    private FiberExecutorScheduler scheduler = new FiberExecutorScheduler("dut-clock-scheduler", Runnable::run);
 
     private int waiterCnt = 1;
     private Semaphore clockSemaphore = new Semaphore(0);
@@ -24,13 +28,12 @@ public class DUTClockManager {
 
         this.xclock = clock;
         System.out.println("DUT Clock setting up");
-        FiberExecutorScheduler scheduler = new FiberExecutorScheduler("dut-clock-scheduler", Runnable::run);
         System.out.println(Thread.currentThread().getName() + ": Starting DUT Clock Scheduler...");
         // 创建一个无界的 Channel
 //        taskChannel = Channels.newChannel(20);
 
         // 启动主 Fiber
-        Fiber<Void> fiber = new Fiber<>(scheduler, () -> {
+        Fiber<Void> fiber = new Fiber<>(this.scheduler, () -> {
             while (running) {
                 try {
                     // 等待新的任务通知（挂起式操作）
@@ -86,21 +89,47 @@ public class DUTClockManager {
 //            }
         }
 
-        // 挂起当前协程直到任务完成
-//        latch.await();
-
         // 步骤完成后清理资源
         latchMap.remove(id);
     }
 
     public void shutdown() {
         running = false; // 停止 Fiber
+//        while (true){
+//            int count;
+//            synchronized (latchMap){
+//                count = latchMap.size();
+//            }
+//            if (count == 0){
+//                clockSemaphore.release(waiterCnt);
+//                break;
+//            }
+//        }
+
         taskChannel.close(); // 关闭 Channel，终止主 Fiber
     }
 
-    public void resize(int sze){    
+    public void resize(int sze){
         this.waiterCnt = sze;
     }
+
+    public void submit(Runnable task) {
+        Fiber<Void> fiber = new Fiber<>(this.scheduler, ()->{
+            task.run();
+        });
+        fiber.start();
+        res:
+        try {
+            // 创建并启动 Fiber，并直接返回任务结果
+            fiber.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            break res;
+//            Thread.currentThread().interrupt();
+//            throw new RuntimeException("Task execution failed", e);
+        }
+    }
+
 }
 
 

@@ -12,8 +12,8 @@ public class ALUWrapper {
 
     DUTClockManager cm;
 
-    @AutoDUT()
-    ALUTestWrapper aluTestWrapper;
+//    @AutoDUT()
+//    ALUTestWrapper aluTestWrapper;
 
     ALUWrapper(){
         cm = new DUTClockManager(alu.xclock) ;
@@ -21,6 +21,7 @@ public class ALUWrapper {
 
     public void clear(){
         this.cm.shutdown();
+//        this.aluTestWrapper.finish();
         this.alu.Finish();
     }
 
@@ -28,13 +29,8 @@ public class ALUWrapper {
         alu.a.Set(in.ab.a);
         alu.b.Set(in.ab.b);
         alu.alu_sel.Set(in.sel.sel);
-        try {
-            cm.waitForSteps("alu", 1);
-        } catch (Exception e) {
-
-            e.printStackTrace();
-        }
-//        alu.Step(term);
+        cm.waitForSteps("alu", 1);
+        alu.Step(term);
         return alu.alu_out.U().intValue();
 //        aluTestWrapper.postIn(in);
 //        aluTestWrapper.Step();
