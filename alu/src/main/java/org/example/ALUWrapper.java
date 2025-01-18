@@ -17,6 +17,9 @@ public class ALUWrapper {
 
     ALUWrapper(){
         cm = new DUTClockManager(alu.xclock) ;
+        alu.a.AsImmWrite();
+        alu.b.AsImmWrite();
+        alu.alu_sel.AsImmWrite();
     }
 
     public void clear(){

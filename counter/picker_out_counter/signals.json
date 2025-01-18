@@ -1,0 +1,20 @@
+{
+    "clk": {
+        "High": -1,
+        "Low": 0,
+        "Pin": "input",
+        "_": true
+    },
+    "count": {
+        "High": 3,
+        "Low": 0,
+        "Pin": "output",
+        "_": true
+    },
+    "rst": {
+        "High": -1,
+        "Low": 0,
+        "Pin": "input",
+        "_": true
+    }
+}
