@@ -89,10 +89,10 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 .build();
         implClassBuilder.addField(dutField);
 
-        String clockManagerName = "clockManager" + dutId;
-        FieldSpec clockField = FieldSpec.builder(clockManagerTypeName,clockManagerName, Modifier.PRIVATE)
-                .build();
-        implClassBuilder.addField(clockField);
+//        String clockManagerName = "clockManager" + dutId;
+//        FieldSpec clockField = FieldSpec.builder(clockManagerTypeName,clockManagerName, Modifier.PRIVATE)
+//                .build();
+//        implClassBuilder.addField(clockField);
 
         String initializeClockStr = "";
 
@@ -104,11 +104,11 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 .addModifiers(Modifier.PUBLIC)
                 .addStatement("this.$N = new $T()", instanceFieldName, dutTypeName)
                 .addStatement(initializeClockStr)
-                .addStatement("this.$N = new $T($N.xclock)", clockManagerName, clockManagerTypeName,instanceFieldName)
+//                .addStatement("this.$N = new $T($N.xclock)", clockManagerName, clockManagerTypeName,instanceFieldName)
                 .build();
         implClassBuilder.addMethod(constructor);
 
-        addMethodsToImplClass(implClassBuilder, fieldType, new ConstantNames(instanceFieldName, clockManagerName), prefix, processingEnv.getTypeUtils());
+        addMethodsToImplClass(implClassBuilder, fieldType, new ConstantNames(instanceFieldName, ""), prefix, processingEnv.getTypeUtils());
 
         // 获取`@AutoDUT`修饰类的包路径
         // 写入生成的类到相同包路径
@@ -202,12 +202,12 @@ public class AutoDUTProcessor extends AbstractProcessor {
                         if (method.getParameters().size() == 1) {
                             stepTime = method.getParameters().get(0).getSimpleName().toString();
                         }
-                        methodBody.append("this." +  clkManagerName + ".waitForSteps(\"" + instanceFieldName +"\", " + stepTime + ");\n");
-//                        methodBody.append("this." + instanceFieldName + ".Step(" + stepTime + ");\n");
+//                        methodBody.append("this." +  clkManagerName + ".waitForSteps(\"" + instanceFieldName +"\", " + stepTime + ");\n");
+                        methodBody.append("this." + instanceFieldName + ".Step(" + stepTime + ");\n");
                     } else if (methodName.equals("getXClock")) {
                         methodBody.append("return this." + instanceFieldName + ".xclock;\n");
                     } else if (methodName.equals("finish")) {
-                        methodBody.append("this." + clkManagerName + ".shutdown();\n").append("this." + instanceFieldName + ".Finish();\n");
+//                        methodBody.append("this." + clkManagerName + ".shutdown();\n").append("this." + instanceFieldName + ".Finish();\n");
                     } else {
                         methodBody.append("System.out.println(\"Calling method: ").append(methodName).append("\");\n");
                         if (!returnType.toString().equals("void")) {

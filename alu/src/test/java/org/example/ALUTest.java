@@ -61,7 +61,7 @@ public class ALUTest {
                             in.sel.sel = 0;
                             int res = (a + b) & limit;
                                         assertEquals(res,
-                                                alu.process(in, 1)
+                                                alu.process(in)
                                         );
 //                        in.ab.a = a;
 
@@ -97,7 +97,7 @@ public class ALUTest {
                     in.ab.a = a;
                     in.ab.b = b;
                     in.sel.sel  = c;
-                    assertEquals(refModel(a, b, c), alu.process(in, 1));
+                    assertEquals(refModel(a, b, c), alu.process(in));
                 }
             }
         }
@@ -113,7 +113,7 @@ public class ALUTest {
             in.ab.a = random.nextInt( 256);
             in.ab.b = random.nextInt( 256);
             in.sel.sel  = random.nextInt( 16);
-            assertEquals(refModel(in.ab.a, (int)in.ab.b, in.sel.sel), alu.process(in, 1));
+            assertEquals(refModel(in.ab.a, (int)in.ab.b, in.sel.sel), alu.process(in));
 
         }
     }

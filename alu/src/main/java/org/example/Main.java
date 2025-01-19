@@ -13,7 +13,7 @@ public class Main {
             in.ab.a = random.nextInt( 256);
             in.ab.b = random.nextInt( 256);
             in.sel.sel  = random.nextInt( 16);
-            wrapper.process(in, 1);
+            wrapper.process(in);
 //            System.out.println(wrapper.process(in, 1));
 
         }

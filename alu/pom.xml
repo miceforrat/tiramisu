@@ -51,11 +51,11 @@
             <artifactId>aspectjrt</artifactId>
             <version>1.9.7</version>
         </dependency>
-        <dependency>
-            <groupId>co.paralleluniverse</groupId>
-            <artifactId>quasar-core</artifactId>
-            <version>0.8.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>co.paralleluniverse</groupId>-->
+<!--            <artifactId>quasar-core</artifactId>-->
+<!--            <version>0.8.0</version>-->
+<!--        </dependency>-->
 
 
     </dependencies>
@@ -81,7 +81,7 @@
 <!--                    <forkCount>0</forkCount>-->
                     <parallel>methods</parallel>
                     <useUnlimitedThreads>true</useUnlimitedThreads>
-                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>
+<!--                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>-->
                 </configuration>
             </plugin>
 

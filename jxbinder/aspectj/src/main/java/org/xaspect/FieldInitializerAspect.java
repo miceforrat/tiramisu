@@ -1,13 +1,17 @@
 package org.xaspect;
 
 
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 import java.lang.reflect.*;
+import java.util.Arrays;
 
 
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.xaspect.datas.Pin;
 
 
@@ -58,6 +62,46 @@ public class FieldInitializerAspect {
                 }
             }
         }
+    }
+
+    @Around("@annotation(agentMethod)")
+    public Object aroundAgentMethod(ProceedingJoinPoint joinPoint, AgentMethod agentMethod) throws Throwable {
+        // 获取方法信息
+        Method currentMethod = getCurrentMethod(joinPoint);
+        Class<?>[] parameterTypes = currentMethod.getParameterTypes();
+        Class<?> returnType = currentMethod.getReturnType();
+
+//        System.out.println("Looking for method: " + agentMethod.refMethodName());
+//        System.out.println("In class: " + agentMethod.refClazz().getName());
+//        System.out.println("With parameter types: " + Arrays.toString(parameterTypes));
+        //         获取注解中的方法信息
+        Method refMethod = agentMethod.refClazz().getMethod(agentMethod.refMethodName(), parameterTypes);
+
+        // 验证参数类型和返回值类型
+        if (!returnType.equals(refMethod.getReturnType())) {
+            throw new IllegalArgumentException("Return type mismatch between annotated method and refMethod");
+        }
+
+
+//         获取当前方法的参数
+        Object[] args = joinPoint.getArgs();
+//        System.out.println("Method arguments: " + Arrays.toString(args));
+        Object refResult;
+        if (Modifier.isStatic(refMethod.getModifiers())) {
+            // 如果是静态方法，直接通过类调用
+            refResult = refMethod.invoke(null, args);
+        } else {
+            // 如果是实例方法，创建实例后调用
+            Object refInstance = agentMethod.refClazz().getDeclaredConstructor().newInstance();
+            refResult = refMethod.invoke(refInstance, args);
+        }
+        // 执行原方法
+        Object result = joinPoint.proceed();
+        if (!result.equals(refResult)){
+            throw new AssertionError("JXBINDER Assertion Failed: expected: " + refResult + ", actual: " + result);
+        }
+        // 返回原方法的结果
+        return result;
     }
 
     private DUTWrapper<?> wrapperConstruct(Field field){
@@ -214,6 +258,17 @@ public class FieldInitializerAspect {
             ret.append("return " + fieldPrefix + ";\n");
         }
         return ret.toString();
+    }
+
+
+    private Method getCurrentMethod(ProceedingJoinPoint joinPoint) throws NoSuchMethodException {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+
+        String methodName = signature.getName();
+        Class<?> targetClass = signature.getDeclaringType();
+        Class<?>[] parameterTypes = signature.getParameterTypes();
+        return targetClass.getMethod(methodName, parameterTypes);
+//        return null;
     }
 
 
