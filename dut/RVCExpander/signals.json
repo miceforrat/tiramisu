@@ -1,0 +1,28 @@
+{
+    "io": {
+        "fsIsOff": {
+            "High": -1,
+            "Low": 0,
+            "Pin": "input",
+            "_": true
+        },
+        "ill": {
+            "High": -1,
+            "Low": 0,
+            "Pin": "output",
+            "_": true
+        },
+        "in": {
+            "High": 31,
+            "Low": 0,
+            "Pin": "input",
+            "_": true
+        },
+        "out_bits": {
+            "High": 31,
+            "Low": 0,
+            "Pin": "output",
+            "_": true
+        }
+    }
+}
