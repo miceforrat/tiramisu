@@ -1,24 +1,17 @@
-package org.xaspect.clocks;
+package org.xaspect.executors;
 
 
 import com.xspcomm.XClock;
-import org.xaspect.DUTWrapper;
 
-import javax.xml.crypto.Data;
-import java.nio.channels.Pipe;
 import java.util.*;
-import java.util.function.Consumer;
 
 public class HWTaskExecutor {
     private PriorityQueue<TaskInfo> taskQueue = new PriorityQueue<>();
 
     private XClock xclock;
 
-    private DUTClockManager dutClockManager;
-
     public void bindClock(XClock clock) {
         this.xclock = clock;
-        this.dutClockManager = new DUTClockManager(clock);
     }
 
     public void submit(TaskFlow tasks) {
@@ -40,8 +33,7 @@ public class HWTaskExecutor {
                 task.run();
             }
 
-            dutClockManager.waitForSteps("111", 1);
-//            xclock.Step();
+            xclock.Step();
             stepCount+=1;
         }
     }
@@ -60,32 +52,6 @@ public class HWTaskExecutor {
             this.task = task;
             this.steps = steps;
         }
-    }
-
-    private static class DataPipeMapperInstance{
-
-        private Map<String, DataPipe> pipeMap = new HashMap<>();
-
-        public static DataPipeMapperInstance instance = new DataPipeMapperInstance();
-
-        private DataPipeMapperInstance() {}
-
-        public <T, P> void addPipe(String id) {
-            pipeMap.put(id, new DataPipe<T, P>());
-        }
-
-        public <T> void write(String id, T data) {
-            if (pipeMap.containsKey(id)) {
-                pipeMap.get(id).sink = data;
-            } else {
-                System.err.println("Please check if pipe exists!");
-            }
-        }
-    }
-
-    private static class DataPipe<T, P>{
-        T sink;
-        P source;
     }
 
     public static class TaskFlow{

@@ -51,6 +51,12 @@
             <artifactId>aspectjrt</artifactId>
             <version>1.9.7</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.ea.async</groupId>
+            <artifactId>ea-async</artifactId>
+            <version>1.2.3</version>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>co.paralleluniverse</groupId>-->
 <!--            <artifactId>quasar-core</artifactId>-->
@@ -78,7 +84,6 @@
                 <configuration>
                     <skipTests>false</skipTests>
 <!--                    <testFailureIgnore>true</testFailureIgnore>-->
-<!--                    <forkCount>0</forkCount>-->
                     <parallel>methods</parallel>
                     <useUnlimitedThreads>true</useUnlimitedThreads>
 <!--                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>-->
@@ -119,23 +124,23 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.0</version>
+<!--            <plugin>-->
+<!--                <groupId>org.codehaus.mojo</groupId>-->
+<!--                <artifactId>exec-maven-plugin</artifactId>-->
+<!--&lt;!&ndash;                <version>3.1.0</version>&ndash;&gt;-->
 
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>${project.basedir}/lib/UT_ALU-java.jar</additionalClasspathElement>
-<!--                        <additionalClasspathElement>${project.basedir}/lib/xspcomm-java.jar</additionalClasspathElement>-->
-                    </additionalClasspathElements>
-                    <arguments>
-<!--                        <argument>-->
-<!--                            -javaagent:${project.basedir}/quasar-core-0.8.0.jar-->
-<!--                        </argument>-->
-                    </arguments>
-                </configuration>
-            </plugin>
+<!--                <configuration>-->
+<!--                    <additionalClasspathElements>-->
+<!--                        <additionalClasspathElement>${project.basedir}/lib/UT_ALU-java.jar</additionalClasspathElement>-->
+<!--&lt;!&ndash;                        <additionalClasspathElement>${project.basedir}/lib/xspcomm-java.jar</additionalClasspathElement>&ndash;&gt;-->
+<!--                    </additionalClasspathElements>-->
+<!--                    <arguments>-->
+<!--&lt;!&ndash;                        <argument>&ndash;&gt;-->
+<!--&lt;!&ndash;                            -javaagent:${project.basedir}/quasar-core-0.8.0.jar&ndash;&gt;-->
+<!--&lt;!&ndash;                        </argument>&ndash;&gt;-->
+<!--                    </arguments>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
 
         </plugins>
     </build>

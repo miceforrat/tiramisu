@@ -2,7 +2,7 @@ package org.xaspect;
 
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.*;
-import org.xaspect.clocks.DUTClockManager;
+import org.xaspect.executors.DUTClockManager;
 import org.xaspect.datas.*;
 
 import javax.annotation.processing.*;
@@ -385,9 +385,15 @@ public class AutoDUTProcessor extends AbstractProcessor {
                         pinName = varName;
                     }
 
-                    String trueInsPin = "this." + insName + "." + prefix + pinName;
+//                    String trueInsPin = "this." + insName + "." + prefix + pinName;
                     String dataWrapperVar = fieldPrefix + "." + varName;
-                    rets.add(constructSingleAssignment(dataWrapperVar, pin.getType(), trueInsPin, ioParameters.isIn, unsignedPin));
+                    String trueInsPin = prefix + pinName;
+                    IOParameters subIOS = ioParameters.copy();
+                    subIOS.isSon = true;
+                    subIOS.isPin = true;
+                    subIOS.unsigned = unsignedPin;
+                    rets.addAll(constructIO(trueInsPin, pin.getType(), insName, dataWrapperVar, subIOS));
+//                    rets.add(constructSingleAssignment(dataWrapperVar, pin.getType(), trueInsPin, ioParameters.isIn, unsignedPin));
                 } else if (pin.isAnnotationPresent(SubBundle.class)) {
                     String subFieldName = fieldPrefix + "." + pin.getName();
                     IOParameters subIOS = ioParameters.copy();
@@ -396,6 +402,8 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     System.err.println("pin prefix" + pinPrefix);
                     List<String> subreses = constructIO(pinPrefix, pin.getType(), insName, subFieldName, subIOS);
                     rets.addAll(subreses);
+                } else if (pin.isAnnotationPresent(ListPins.class)){
+
                 }
             }
         }

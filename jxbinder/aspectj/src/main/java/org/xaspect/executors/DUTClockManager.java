@@ -1,19 +1,19 @@
-package org.xaspect.clocks;
+package org.xaspect.executors;
 import co.paralleluniverse.fibers.Fiber;
 import co.paralleluniverse.fibers.FiberExecutorScheduler;
-import co.paralleluniverse.strands.SuspendableCallable;
 import co.paralleluniverse.strands.channels.Channel;
 import co.paralleluniverse.strands.channels.Channels;
-import co.paralleluniverse.strands.concurrent.CountDownLatch;
 import co.paralleluniverse.strands.concurrent.Semaphore;
 import com.xspcomm.XClock;
 
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * deprecated
+ * */
 public class DUTClockManager {
     private final XClock xclock;
     private final ConcurrentMap<String, Semaphore> latchMap = new ConcurrentHashMap<>();

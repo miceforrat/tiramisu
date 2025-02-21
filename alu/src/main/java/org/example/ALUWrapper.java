@@ -2,19 +2,17 @@ package org.example;
 import com.ut.UT_ALU;
 import org.xaspect.AgentMethod;
 import org.xaspect.AutoDUT;
-import org.xaspect.clocks.DUTClockManager;
 
-import java.math.BigInteger;
-//import org.xbinder.annotations.AutoDUT;
 
 public class ALUWrapper {
 //    @AutoDUT("1")
-//    UT_ALU alu = new UT_ALU();
+    UT_ALU alu = new UT_ALU();
 
 //    DUTClockManager cm;
 
-    @AutoDUT()
-    ALUTestWrapper aluTestWrapper;
+//    @AutoDUT()
+//    ALUTestWrapper aluTestWrapper;
+    ALUTestWrapper aluTestWrapper = new ALUTestWrapperImpl1();
 
     ALUWrapper(){
 //        cm = new DUTClockManager(alu.xclock) ;
@@ -30,17 +28,13 @@ public class ALUWrapper {
 //        this.alu.Finish();
     }
 
-    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
+//    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
     public int process(ALUIO in) {
-//        alu.a.Set(in.ab.a);
-//        alu.b.Set(in.ab.b);
-//        alu.alu_sel.Set(in.sel.sel);
-//        cm.waitForSteps("alu", 1);
-//        alu.Step(term);
-//        return alu.alu_out.U().intValue();
+
         aluTestWrapper.postIn(in);
         aluTestWrapper.Step();
-        return aluTestWrapper.getOut();
+        int res = aluTestWrapper.getOut();
+        return res;
     }
 
 
