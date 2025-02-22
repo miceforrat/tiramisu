@@ -10,9 +10,9 @@ public class ALUWrapper {
 
 //    DUTClockManager cm;
 
-//    @AutoDUT()
-//    ALUTestWrapper aluTestWrapper;
-    ALUTestWrapper aluTestWrapper = new ALUTestWrapperImpl1();
+    @AutoDUT()
+    ALUTestWrapper aluTestWrapper;
+//    ALUTestWrapper aluTestWrapper = new ALUTestWrapperImpl1();
 
     ALUWrapper(){
 //        cm = new DUTClockManager(alu.xclock) ;

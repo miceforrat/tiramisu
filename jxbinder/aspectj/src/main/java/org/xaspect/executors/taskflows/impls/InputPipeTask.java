@@ -3,11 +3,11 @@ package org.xaspect.executors.taskflows.impls;
 import org.xaspect.executors.taskflows.HWTask;
 
 public abstract class InputPipeTask<T> implements HWTask {
-    WithPipeTaskFlow.DataPipe<T> inputPipe;
+    DataPipe<T> inputPipe;
 
     String name;
 
-    InputPipeTask(WithPipeTaskFlow.DataPipe<T> inputPipe, String name) {
+    InputPipeTask(DataPipe<T> inputPipe, String name) {
         this.inputPipe = inputPipe;
         this.name = name;
     }

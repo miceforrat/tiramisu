@@ -6,7 +6,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 import java.lang.reflect.*;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 
 import org.aspectj.lang.annotation.After;
@@ -31,7 +32,6 @@ public class FieldInitializerAspect {
     public void initializeFields(Object obj) {
         Class<?> clazz = obj.getClass();
         Field[] fields = clazz.getDeclaredFields();
-//        System.out.println("checking");
         for (Field field : fields) {
             // 检查字段是否带有 @AutoDUT 注解
             if (field.isAnnotationPresent(AutoDUT.class)) {
@@ -41,20 +41,9 @@ public class FieldInitializerAspect {
                     // 如果字段未初始化，则自动赋值
                     if (field.get(obj) == null) {
                         Class<?> fieldType = field.getType();
-//                        System.out.println(fieldType.getName());
                         if (isInterfaceInherited(fieldType, DUTWrapper.class)) {
-//                            System.out.println(fieldType.getName() + "is DUTWrapper");
-                            // create the implement of the interface DUTWrapper
-//                            Type gen = field.getGenericType();
-//
-//                            if (gen instanceof ParameterizedType) {
-//                                ParameterizedType pt = (ParameterizedType) gen;
-//
-//                                // 注入实现类实例
+                            // 注入实现类实例
                             field.set(obj, wrapperConstruct(field));
-//
-//
-//                            }
                         }
                     }
                 } catch (Exception e) {
@@ -71,9 +60,6 @@ public class FieldInitializerAspect {
         Class<?>[] parameterTypes = currentMethod.getParameterTypes();
         Class<?> returnType = currentMethod.getReturnType();
 
-//        System.out.println("Looking for method: " + agentMethod.refMethodName());
-//        System.out.println("In class: " + agentMethod.refClazz().getName());
-//        System.out.println("With parameter types: " + Arrays.toString(parameterTypes));
         //         获取注解中的方法信息
         Method refMethod = agentMethod.refClazz().getMethod(agentMethod.refMethodName(), parameterTypes);
 
@@ -85,7 +71,6 @@ public class FieldInitializerAspect {
 
 //         获取当前方法的参数
         Object[] args = joinPoint.getArgs();
-//        System.out.println("Method arguments: " + Arrays.toString(args));
         Object refResult;
         if (Modifier.isStatic(refMethod.getModifiers())) {
             // 如果是静态方法，直接通过类调用
@@ -104,22 +89,29 @@ public class FieldInitializerAspect {
         return result;
     }
 
+    private Map<String, DUTWrapper<?>> existingWrappers = new HashMap<>();
+
     private DUTWrapper<?> wrapperConstruct(Field field){
 
         Class<?> fieldType = field.getType();
         AutoDUT annotation = field.getAnnotation(AutoDUT.class);
-        String prefix = annotation.value();
         String dutId = annotation.id();
 
         // 获取实现类的全限定名
         String implClassName = fieldType.getCanonicalName() + "Impl" + dutId; // 假设生成的类名规则为 "FieldTypeImpl"
 
+        if (existingWrappers.get(implClassName) != null) {
+            return existingWrappers.get(implClassName);
+        }
+
         try {
             // 使用反射加载生成的实现类
             Class<?> implClass = Class.forName(implClassName);
             System.out.println(implClassName);
+            DUTWrapper<?> wrapperImpl = (DUTWrapper<?>) implClass.getConstructor().newInstance();
+            existingWrappers.put(implClassName, wrapperImpl);
+            return wrapperImpl;
             // 使用构造方法实例化实现类
-            return (DUTWrapper<?>) implClass.getConstructor().newInstance();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to construct wrapper for field: " + field.getName(), e);

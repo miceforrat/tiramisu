@@ -4,9 +4,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
-import org.xaspect.AgentMethod;
-import org.xaspect.AutoDUT;
-import org.xaspect.executors.HWTaskExecutor;
+//import org.xaspect.executors.HWTaskExecutor;
 
 
 import static org.junit.Assert.*;

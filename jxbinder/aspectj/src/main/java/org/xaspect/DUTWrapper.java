@@ -8,7 +8,5 @@ public interface DUTWrapper<DUT> {
 
     public void Step(int step);
 
-    public XClock getXClock();
-
     public void finish();
 }

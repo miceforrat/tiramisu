@@ -65,7 +65,6 @@ public class AutoDUTProcessor extends AbstractProcessor {
         String prefix = autoDUT.value();
         String dutId = autoDUT.id();
         String clockName = autoDUT.clockName();
-        TypeName clockManagerTypeName = TypeName.get(DUTClockManager.class);
 
         // 生成实现类名
         String implClassName = fieldType.getSimpleName() + "Impl" + dutId;
@@ -83,32 +82,28 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 .addAnnotation(annotation)
                 .addSuperinterface(ClassName.get(fieldType));
 
-        // 添加字段和构造方法
+        DUTClassBuilder classBuilder = new NormalDUTClassBuilder();
+        classBuilder.buildConstructor(implClassBuilder, dutTypeName, autoDUT);
+//        // 添加字段和构造方法
         String instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
-        FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
-                .build();
-        implClassBuilder.addField(dutField);
-
-//        String clockManagerName = "clockManager" + dutId;
-//        FieldSpec clockField = FieldSpec.builder(clockManagerTypeName,clockManagerName, Modifier.PRIVATE)
+//        FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
 //                .build();
-//        implClassBuilder.addField(clockField);
+//        implClassBuilder.addField(dutField);
+//
+//        String initializeClockStr = "";
+//
+//        if (!clockName.isEmpty()){
+//            initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
+//        }
+//
+//        MethodSpec constructor = MethodSpec.constructorBuilder()
+//                .addModifiers(Modifier.PUBLIC)
+//                .addStatement("this.$N = new $T()", instanceFieldName, dutTypeName)
+//                .addStatement(initializeClockStr)
+//                .build();
+//        implClassBuilder.addMethod(constructor);
 
-        String initializeClockStr = "";
-
-        if (!clockName.isEmpty()){
-            initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
-        }
-
-        MethodSpec constructor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
-                .addStatement("this.$N = new $T()", instanceFieldName, dutTypeName)
-                .addStatement(initializeClockStr)
-//                .addStatement("this.$N = new $T($N.xclock)", clockManagerName, clockManagerTypeName,instanceFieldName)
-                .build();
-        implClassBuilder.addMethod(constructor);
-
-        addMethodsToImplClass(implClassBuilder, fieldType, new ConstantNames(instanceFieldName, ""), prefix, processingEnv.getTypeUtils());
+        addMethodsToImplClass(implClassBuilder, fieldType, new ConstantNames(instanceFieldName, ""), prefix, processingEnv.getTypeUtils(), classBuilder);
 
         // 获取`@AutoDUT`修饰类的包路径
         // 写入生成的类到相同包路径
@@ -154,10 +149,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
         throw new IllegalStateException("not extends from DUTWrapper");
     }
 
-    private void addMethodsToImplClass(TypeSpec.Builder implClassBuilder, TypeElement fieldType, ConstantNames constantNames, String prefix, Types typeUtils) {
+    private void addMethodsToImplClass(TypeSpec.Builder implClassBuilder, TypeElement fieldType, ConstantNames constantNames, String prefix, Types typeUtils, DUTClassBuilder clsBuilder) {
         Set<String> processedMethods = new HashSet<>(); // 防止重复处理同名方法
         String instanceFieldName = constantNames.instanceName;
-        String clkManagerName = constantNames.clockManagerName;
         // 遍历当前类型及其父类或接口
         for (TypeElement currentElement : getAllSuperTypes(fieldType, typeUtils)) {
             for (Element enclosedElement : currentElement.getEnclosedElements()) {
@@ -188,33 +182,39 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     }
 
                     // 构造方法体
-                    StringBuilder methodBody = new StringBuilder();
+
+
+//                    StringBuilder methodBody = new StringBuilder();
+
                     if (method.getAnnotation(PostMethod.class) != null) {
-                        String postPrefix = prefix + method.getAnnotation(PostMethod.class).prefix();
-                        List<String> res = constructPostMethod(method, postPrefix, instanceFieldName);
-                        res.forEach(methodBody::append);
+//                        String postPrefix = prefix + method.getAnnotation(PostMethod.class).prefix();
+//                        List<String> res = constructPostMethod(method, postPrefix, instanceFieldName);
+//                        res.forEach(methodBody::append);
+                        clsBuilder.buildPostMethod(methodBuilder, prefix, method);
                     } else if (method.getAnnotation(GetMethod.class) != null) {
-                        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
-                        List<String> res = constructGetMethod(method, getPrefix, instanceFieldName);
-                        res.forEach(methodBody::append);
+//                        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
+//                        List<String> res = constructGetMethod(method, getPrefix, instanceFieldName);
+//                        res.forEach(methodBody::append);
+                        clsBuilder.buildGetMethod(methodBuilder, prefix, method);
                     } else if (methodName.equals("Step")) {
-                        String stepTime = "1";
+//                        String stepTime = "1";
                         if (method.getParameters().size() == 1) {
-                            stepTime = method.getParameters().get(0).getSimpleName().toString();
+                            String stepTime = method.getParameters().get(0).getSimpleName().toString();
+                            clsBuilder.buildStep(stepTime, methodBuilder);
+                        } else {
+                            clsBuilder.buildStep( methodBuilder);
                         }
 //                        methodBody.append("this." +  clkManagerName + ".waitForSteps(\"" + instanceFieldName +"\", " + stepTime + ");\n");
-                        methodBody.append("this." + instanceFieldName + ".Step(" + stepTime + ");\n");
-                    } else if (methodName.equals("getXClock")) {
-                        methodBody.append("return this." + instanceFieldName + ".xclock;\n");
                     } else if (methodName.equals("finish")) {
+                        clsBuilder.buildFinish(methodBuilder);
 //                        methodBody.append("this." + clkManagerName + ".shutdown();\n").append("this." + instanceFieldName + ".Finish();\n");
                     } else {
-                        methodBody.append("System.out.println(\"Calling method: ").append(methodName).append("\");\n");
+                        methodBuilder.addCode("System.out.println(\"Calling method: " + methodName + "\");\n");
                         if (!returnType.toString().equals("void")) {
-                            methodBody.append("return null; // Replace with actual implementation\n");
+                            methodBuilder.addCode("return null; // Replace with actual implementation\n");
                         }
                     }
-                    methodBuilder.addCode(methodBody.toString());
+//                    methodBuilder.addCode(methodBody.toString());
 
                     // 添加方法到实现类
                     implClassBuilder.addMethod(methodBuilder.build());
@@ -307,10 +307,21 @@ public class AutoDUTProcessor extends AbstractProcessor {
         ios.isPin = outerPinAnnotation != null;
 
         String outerName = "retBundle";
-//        System.err.println(outerName);
-        List<String> outputAssigns = constructIO(outputPrefix, getClassFromTypeMirror(method.getReturnType()), instanceFieldName, outerName, ios);
+
+        Class<?> returnTypeCls = getClassFromTypeMirror(method.getReturnType());
+        String typeName = returnTypeCls.getTypeName();
+        String initializr = typeName + " " + outerName ;
+        if (!ios.isPin) {
+            initializr += " = new " + typeName + "()";
+        }
+        initializr += ";\n";
+        ret.add(initializr);
+        List<String> outputAssigns = constructIO(outputPrefix, returnTypeCls, instanceFieldName, outerName, ios);
 
         ret.addAll(outputAssigns);
+
+        ret.add("return " + outerName + ";\n");
+
         return ret;
     }
 
@@ -352,19 +363,19 @@ public class AutoDUTProcessor extends AbstractProcessor {
         }
 
         List<String> rets = new ArrayList<>();
-        String typeName = dataClass.getTypeName();
+//        String typeName = dataClass.getTypeName();
         String fieldPrefix;
         fieldPrefix = IOName;
 
         //如果是输出，初始化待返回结果
-        if ((!ioParameters.isIn) && (!ioParameters.isSon)) {
-            String initializr = typeName + " " + fieldPrefix ;
-            if (!ioParameters.isPin) {
-                initializr += " = new " + typeName + "()";
-            }
-            initializr += ";\n";
-            rets.add(initializr);
-        }
+//        if ((!ioParameters.isIn) && (!ioParameters.isSon)) {
+//            String initializr = typeName + " " + fieldPrefix ;
+//            if (!ioParameters.isPin) {
+//                initializr += " = new " + typeName + "()";
+//            }
+//            initializr += ";\n";
+//            rets.add(initializr);
+//        }
 
         if (ioParameters.isPin) {
             String trueInsPin = "this." + insName + "." + prefix;
@@ -409,9 +420,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
         }
 
         //输出方法，增加返回值
-        if (!ioParameters.isIn){
-            rets.add("return " + fieldPrefix + ";\n");
-        }
+//        if (!ioParameters.isIn){
+//            rets.add("return " + fieldPrefix + ";\n");
+//        }
         return rets;
     }
 

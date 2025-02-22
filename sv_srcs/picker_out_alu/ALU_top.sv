@@ -14,48 +14,54 @@ module ALU_top;
  );
 
 
-  export "DPI-C" function get_axxEssxCD7Z95u;
-  export "DPI-C" function set_axxEssxCD7Z95u;
-  export "DPI-C" function get_bxxEssxCD7Z95u;
-  export "DPI-C" function set_bxxEssxCD7Z95u;
-  export "DPI-C" function get_alu_selxxEssxCD7Z95u;
-  export "DPI-C" function set_alu_selxxEssxCD7Z95u;
-  export "DPI-C" function get_alu_outxxEssxCD7Z95u;
+  export "DPI-C" function get_axxPfBDHO8Bkia;
+  export "DPI-C" function set_axxPfBDHO8Bkia;
+  export "DPI-C" function get_bxxPfBDHO8Bkia;
+  export "DPI-C" function set_bxxPfBDHO8Bkia;
+  export "DPI-C" function get_alu_selxxPfBDHO8Bkia;
+  export "DPI-C" function set_alu_selxxPfBDHO8Bkia;
+  export "DPI-C" function get_alu_outxxPfBDHO8Bkia;
+  export "DPI-C" function set_alu_outxxPfBDHO8Bkia;
 
 
-  function void get_axxEssxCD7Z95u;
+  function void get_axxPfBDHO8Bkia;
     output logic [7:0] value;
     value=a;
   endfunction
 
-  function void set_axxEssxCD7Z95u;
+  function void set_axxPfBDHO8Bkia;
     input logic [7:0] value;
     a=value;
   endfunction
 
-  function void get_bxxEssxCD7Z95u;
+  function void get_bxxPfBDHO8Bkia;
     output logic [7:0] value;
     value=b;
   endfunction
 
-  function void set_bxxEssxCD7Z95u;
+  function void set_bxxPfBDHO8Bkia;
     input logic [7:0] value;
     b=value;
   endfunction
 
-  function void get_alu_selxxEssxCD7Z95u;
+  function void get_alu_selxxPfBDHO8Bkia;
     output logic [3:0] value;
     value=alu_sel;
   endfunction
 
-  function void set_alu_selxxEssxCD7Z95u;
+  function void set_alu_selxxPfBDHO8Bkia;
     input logic [3:0] value;
     alu_sel=value;
   endfunction
 
-  function void get_alu_outxxEssxCD7Z95u;
+  function void get_alu_outxxPfBDHO8Bkia;
     output logic [7:0] value;
     value=alu_out;
+  endfunction
+
+  function void set_alu_outxxPfBDHO8Bkia;
+    input logic [7:0] value;
+    alu_out=value;
   endfunction
 
 
@@ -65,8 +71,8 @@ module ALU_top;
     $dumpvars(0, ALU_top);
   end
 
-  export "DPI-C" function finish_EssxCD7Z95u;
-  function void finish_EssxCD7Z95u;
+  export "DPI-C" function finish_PfBDHO8Bkia;
+  function void finish_PfBDHO8Bkia;
     $finish;
   endfunction
 
