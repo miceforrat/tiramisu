@@ -21,14 +21,18 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/UT_FIFO-java.jar</systemPath>
         </dependency>
-
         <dependency>
-            <groupId>com.ut</groupId>
-            <artifactId>xspcomm-java</artifactId>
+            <groupId>org.xaspect</groupId>
+            <artifactId>binders</artifactId>
             <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/lib/xspcomm-java.jar</systemPath>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.ut</groupId>-->
+<!--            <artifactId>xspcomm-java</artifactId>-->
+<!--            <version>1.0.0</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/lib/xspcomm-java.jar</systemPath>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -37,8 +41,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -47,16 +51,57 @@
                 <configuration>
                     <skipTests>false</skipTests>
                     <!--                    <testFailureIgnore>true</testFailureIgnore>-->
-                    <forkCount>0</forkCount>
+                    <!--                    <forkCount>0</forkCount>-->
+                    <parallel>methods</parallel>
+                    <useUnlimitedThreads>true</useUnlimitedThreads>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.14.0</version>
+                <configuration>
+                    <complianceLevel>11</complianceLevel>
+                    <source>11</source>
+                    <target>11</target>
+
+                    <aspectLibraries>
+                        <aspectLibrary>
+                            <groupId>org.xaspect</groupId>
+                            <artifactId>binders</artifactId>
+                        </aspectLibrary>
+                    </aspectLibraries>
+                    <verbose>true</verbose>
+                    <showWeaveInfo>true</showWeaveInfo>
+
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    <skipTests>false</skipTests>-->
+<!--                    &lt;!&ndash;                    <testFailureIgnore>true</testFailureIgnore>&ndash;&gt;-->
+<!--                    <forkCount>0</forkCount>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
 
         </plugins>
     </build>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

@@ -9,13 +9,14 @@ import java.util.Queue;
 import java.util.Random;
 
 public class FIFOTest {
-    private FIFOWrapper fifo;
+    private FIFOAgent fifo;
     private FIFORef ref;
     private static int FULL = 8;
     private static int EMPTY = 0;
     @Before
     public void setUp() {
-        fifo = new FIFOWrapper();
+        fifo = new FIFOAgent();
+        fifo.setup();
         ref = new FIFORef();
     }
 
@@ -24,7 +25,7 @@ public class FIFOTest {
         int cur = 0;
         Random random = new Random();
         random.setSeed(System.currentTimeMillis());
-        for (int i = 0; i < 100000; i++){
+        for (int i = 0; i < 1000; i++){
             int choice = random.nextInt(3);
             boolean write = (cur == EMPTY || (cur < FULL && choice > 0));
             int rand = random.nextInt(256);

@@ -1,16 +1,16 @@
 package org.example;
 import com.ut.UT_Counter;
 import org.xaspect.AutoDUT;
+import org.xaspect.ConcurrentSupport;
 
 
 public class CounterDriver {
-    private UT_Counter dut = new UT_Counter();
+//    private UT_Counter dut = new UT_Counter();
 
-    @AutoDUT(clockName = "clk")
+    @AutoDUT(clockName = "clk", concurrentSupport = ConcurrentSupport.SEPARATE_THREAD)
     private UTCounterWrapper wrapper;
 
     CounterDriver(){
-//        dut.InitClock("clk");
     }
 
     public int tick(){

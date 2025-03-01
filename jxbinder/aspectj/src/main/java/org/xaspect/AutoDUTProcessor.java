@@ -65,6 +65,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
         String prefix = autoDUT.value();
         String dutId = autoDUT.id();
         String clockName = autoDUT.clockName();
+        ConcurrentSupport builderType = autoDUT.concurrentSupport();
 
         // 生成实现类名
         String implClassName = fieldType.getSimpleName() + "Impl" + dutId;
@@ -81,8 +82,13 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(annotation)
                 .addSuperinterface(ClassName.get(fieldType));
+        DUTClassBuilder classBuilder;
+        if (builderType == ConcurrentSupport.SEPARATE_THREAD){
+            classBuilder = new SeparateThreadDUTClassBuilder();
+        } else {
+            classBuilder = new NormalDUTClassBuilder();
 
-        DUTClassBuilder classBuilder = new NormalDUTClassBuilder();
+        }
         classBuilder.buildConstructor(implClassBuilder, dutTypeName, autoDUT);
 //        // 添加字段和构造方法
         String instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
@@ -107,7 +113,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
         // 获取`@AutoDUT`修饰类的包路径
         // 写入生成的类到相同包路径
-        JavaFile javaFile = JavaFile.builder(packageName, implClassBuilder.build())
+        JavaFile javaFile = JavaFile.builder(packageName, classBuilder.build(implClassBuilder))
                 .build();
 
         try {

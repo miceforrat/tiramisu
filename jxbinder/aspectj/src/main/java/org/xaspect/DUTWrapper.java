@@ -9,4 +9,6 @@ public interface DUTWrapper<DUT> {
     public void Step(int step);
 
     public void finish();
+
+    public void reset();
 }

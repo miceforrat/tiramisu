@@ -1,13 +1,8 @@
 package org.xaspect;
 
-import org.xaspect.datas.Bundle;
-import org.xaspect.datas.ListPins;
-import org.xaspect.datas.Pin;
-import org.xaspect.datas.SubBundle;
+import org.xaspect.datas.*;
 
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -20,7 +15,69 @@ import java.util.List;
 
 class DUTBindingTool {
 
-    static List<String> constructIO(String pre, Class<?> dataClass, String insName, String IOName, IOParameters ioParameters) {
+    static List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName, String outerName){
+        String outputPrefix = prefix;
+        List<String> ret = new ArrayList<>();
+
+        IOParameters ios = new IOParameters();
+        ios.isIn = false;
+        Annotation outerPinAnnotation =  getAnnotationFromType(method.getReturnType(), Pin.class);
+        Annotation outerBundleAnnotation =  getAnnotationFromType(method.getReturnType(), OutBundle.class);
+        if (outerBundleAnnotation != null) {
+            OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
+            outputPrefix += outerBundle.value();
+            ios.coveringUnsigned = outerBundle.coveringUnsigned();
+            ios.unsigned = outerBundle.unsigned();
+        } else if (outerPinAnnotation != null){
+            outputPrefix += ((Pin) outerPinAnnotation).value();
+        }
+        ios.isPin = outerPinAnnotation != null;
+
+        Class<?> returnTypeCls = getClassFromTypeMirror(method.getReturnType());
+        String typeName = returnTypeCls.getTypeName();
+        String initializr = typeName + " " + outerName ;
+        if (!ios.isPin) {
+            initializr += " = new " + typeName + "()";
+        }
+        initializr += ";\n";
+        ret.add(initializr);
+        List<String> outputAssigns = constructIO(outputPrefix, returnTypeCls, instanceFieldName, outerName, ios);
+
+        ret.addAll(outputAssigns);
+
+
+        return ret;
+    }
+
+    static List<String> constructOneParamBinding(String prefix, VariableElement param, String inputBundleName, String instanceFieldName) {
+        IOParameters ios = new IOParameters();
+        ios.isIn = true;
+        String inputPrefix = prefix;
+        Annotation innerPinAnnotation = getAnnotationFromType(param.asType(), Pin.class);
+
+        ios.isPin = innerPinAnnotation != null;
+        Annotation innerBundleAnnotation = getAnnotationFromType(param.asType(), InBundle.class);
+        //更新前缀和unsigned设置
+        if (innerBundleAnnotation != null) {
+            InBundle inBundle = (InBundle) innerBundleAnnotation;
+            inputPrefix += inBundle.value();
+            ios.coveringUnsigned = inBundle.coveringUnsigned();
+            ios.unsigned = inBundle.unsigned();
+        } else if (innerPinAnnotation != null) {
+            Pin pinAnnotation = (Pin) innerPinAnnotation;
+            if (pinAnnotation.value().isEmpty()){
+                inputPrefix += param.getSimpleName().toString();
+            } else {
+                inputPrefix += pinAnnotation.value();
+            }
+            ios.unsigned = pinAnnotation.unsigned();
+        }
+
+        return constructIO(inputPrefix, getClassFromTypeMirror(param.asType()), instanceFieldName, inputBundleName, ios);
+    }
+
+
+    private static List<String> constructIO(String pre, Class<?> dataClass, String insName, String IOName, IOParameters ioParameters) {
         String prefix = pre;
         //bundle类内生的prefix处理
         if (dataClass.isAnnotationPresent(Bundle.class)){

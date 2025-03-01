@@ -11,4 +11,6 @@ public @interface AutoDUT {
     String value() default ""; // prefix for the whole dut, default is none
     String id() default ""; // support for multiple examples
     String clockName() default "";
+    ConcurrentSupport concurrentSupport() default ConcurrentSupport.NORMAL;
+    int waiterCnt() default 1;
 }

@@ -63,7 +63,9 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>aspectj-maven-plugin</artifactId>
+
                 <version>1.14.0</version>
+
                 <configuration>
                     <complianceLevel>11</complianceLevel>
                     <source>11</source>
@@ -77,8 +79,8 @@
                     </aspectLibraries>
                     <verbose>true</verbose>
                     <showWeaveInfo>true</showWeaveInfo>
-
                 </configuration>
+
                 <executions>
                     <execution>
                         <goals>
@@ -94,11 +96,6 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
 
-                <configuration>
-                    <additionalClasspathElements>
-                        <additionalClasspathElement>${project.basedir}/lib/UT_ALU-java.jar</additionalClasspathElement>
-                    </additionalClasspathElements>
-                </configuration>
             </plugin>
 
         </plugins>

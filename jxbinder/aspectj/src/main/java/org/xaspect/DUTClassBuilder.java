@@ -22,4 +22,6 @@ public interface DUTClassBuilder {
     void buildGetMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method );
 
     void buildPostMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method );
+
+    TypeSpec build(TypeSpec.Builder implClassBuilder);
 }

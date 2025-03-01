@@ -1,30 +1,30 @@
 package org.example;
 
 import com.ut.UT_FIFO;
+import org.xaspect.DUTWrapper;
+import org.xaspect.GetMethod;
+import org.xaspect.PostMethod;
+import org.xaspect.datas.OutBundle;
+import org.xaspect.datas.Pin;
 
-public class FIFOWrapper {
-    private UT_FIFO fifo = new UT_FIFO();
-    FIFOWrapper(){
-        fifo.InitClock("clk");
-        fifo.rst_n.Set(1);
-//        fifo.Step();
-    }
+public interface FIFOWrapper extends DUTWrapper<UT_FIFO> {
 
-    public FIFOWriteRet write(int wdata){
-        fifo.wdata.Set(wdata);
-        fifo.wr_en.Set(1);
-        fifo.Step();
-        fifo.wr_en.Set(0);
-        return new FIFOWriteRet(fifo.empty.U().intValue(), fifo.full.U().intValue());
-    }
+    @PostMethod
+    void reset(@Pin("rst_n") int value);
 
-    public FIFOReadRet read(){
-        fifo.rd_en.Set(1);
-        fifo.Step();
-        fifo.rd_en.Set(0);
-        fifo.Step();
-        return new FIFOReadRet(fifo.rdata.U().intValue(), fifo.empty.U().intValue(), fifo.full.U().intValue());
-    }
+    @PostMethod
+    void setWData(@Pin("wdata") int value);
 
+    @PostMethod
+    void setWrEn(@Pin("wr_en")int value);
+
+    @PostMethod
+    void setRdEn(@Pin("rd_en")int value);
+
+    @GetMethod
+    @OutBundle FIFOReadRet readDataAndStatus();
+
+    @GetMethod
+    @OutBundle FIFOWriteRet getAfterWriteStatus();
 
 }
