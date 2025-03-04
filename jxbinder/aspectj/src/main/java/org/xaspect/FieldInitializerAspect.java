@@ -20,7 +20,7 @@ import org.xaspect.datas.Pin;
 public class FieldInitializerAspect {
 
     FieldInitializerAspect(){
-        System.err.println("FieldInitializerAspect");
+//        System.err.println("FieldInitializerAspect");
     }
 
     // 匹配所有目标类的构造方法

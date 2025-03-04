@@ -7,15 +7,15 @@ import org.xaspect.ConcurrentSupport;
 public class FIFOAgent {
 //    private UT_FIFO fifo = new UT_FIFO();
 
-    @AutoDUT(clockName = "clk", concurrentSupport = ConcurrentSupport.SEPARATE_THREAD)
+    @AutoDUT(clockName = "clk", resetName = "rst_n", covFileName = "test.dat")
     private FIFOWrapper fifo;
 
     FIFOAgent(){
 //        fifo.Step();
     }
-
-    public void setup(){
-        fifo.reset(1);
+    
+    public void finish(){
+        fifo.finish();
     }
 
     public FIFOWriteRet write(int wdata){

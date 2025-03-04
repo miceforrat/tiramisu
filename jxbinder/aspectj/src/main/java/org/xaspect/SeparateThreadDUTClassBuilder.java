@@ -42,6 +42,26 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
     private static final String OUT_VALUE_BUNDLES = "outValueMap";
 
     private MethodSpec.Builder constructorBuilder;
+
+    private String resetPinName = "";
+
+    @Override
+    public void buildReset(MethodSpec.Builder methodBuilder) {
+        if (!resetPinName.isEmpty()) {
+
+            methodBuilder.addCode("if (!$N.containsKey("+spareEventIdx + " )){\n" +
+                    "            $N.put(" + spareEventIdx +", reqx -> {\n" +
+                    "               this.$N.$N.Set(1);\n" +
+                    "            });\n" +
+                    "        } ", CONSUMER_MAP_VAR_NAME, CONSUMER_MAP_VAR_NAME, instanceFieldName, resetPinName);
+
+            methodBuilder.addCode("$T<?> req = new $T<Void>(" + spareEventIdx +");\n", DUTReq.class, DUTReq.class)
+                    .addCode("$N.add(req);\n", REQ_BLOCKING_QUEUE_VAR_NAME);
+
+            spareEventIdx += 1;
+        }
+    }
+
     @Override
     public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeName typeName, AutoDUT dutInfo) {
         String dutId = dutInfo.id();
@@ -114,10 +134,30 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
 
         String initializeClockStr = "";
 
-        String clockName = dutInfo.clockName();
+        String clockName = dutInfo.value() + dutInfo.clockName();
         if (!clockName.isEmpty()){
             initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
         }
+
+        resetPinName = dutInfo.value() + dutInfo.resetName();
+        String resetStmt = "";
+        if (!resetPinName.isEmpty()){
+            resetStmt = "this." + instanceFieldName + "." + resetPinName+".Set(1);\n";
+        }
+
+        String fstSetStmt = "";
+        String fstFileName = dutInfo.waveFileName();
+        if (!fstFileName.isEmpty()){
+            fstSetStmt = "this." + instanceFieldName + ".SetWaveform(\"" + fstFileName + "\");\n";
+        }
+
+        String covSetStmt = "";
+        String covFileName = dutInfo.covFileName();
+        if (!covFileName.isEmpty()){
+            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
+        }
+
+
         implClassBuilder.addMethod(MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
                 .addCode("$N.put(1, new $T(0));\n", SEMAPHORE_MAP_VAR_NAME, Semaphore.class)
@@ -132,7 +172,7 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
                         "\n" +
                         "}\n);", CONSUMER_MAP_VAR_NAME)
                 .addCode("Thread aluThread = new Thread(() -> {\n" +
-                        "     $N = new $T();\n" + initializeClockStr +
+                        "     $N = new $T();\n" + initializeClockStr + resetStmt + fstSetStmt + covSetStmt +
                         "     while (running) {\n" +
                         "         try {\n" +
                         "             $T<?> req = reqs.take();\n" +

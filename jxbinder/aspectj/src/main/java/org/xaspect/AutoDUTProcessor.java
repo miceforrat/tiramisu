@@ -30,6 +30,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
         super.init(processingEnv);
         filer = processingEnv.getFiler();
         elementUtils = processingEnv.getElementUtils();
+        DUTBindingTool.processingEnv = processingEnv;
     }
 
     @Override
@@ -55,11 +56,11 @@ public class AutoDUTProcessor extends AbstractProcessor {
     private void processField(VariableElement field) {
 //        String fieldName = field.getSimpleName().toString();
         TypeElement fieldType = elementUtils.getTypeElement(field.asType().toString());
-        System.out.println(field.asType());
+//        System.out.println(field.asType());
         TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
         TypeName dutTypeName = ClassName.bestGuess(dutType.toString());
         String packageName = processingEnv.getElementUtils().getPackageOf(fieldType).getQualifiedName().toString();
-        System.out.println(packageName);
+//        System.out.println(packageName);
         // 获取字段类型和注解信息
         AutoDUT autoDUT = field.getAnnotation(AutoDUT.class);
         String prefix = autoDUT.value();
@@ -69,9 +70,8 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
         // 生成实现类名
         String implClassName = fieldType.getSimpleName() + "Impl" + dutId;
-        System.out.println(implClassName);
         if (doesClassExist(packageName, implClassName)){
-            System.out.println("Class " + implClassName + " already exists, skipping.");
+            System.err.println("Class " + implClassName + " already exists, skipping.");
             return;
         }
 
@@ -208,12 +208,14 @@ public class AutoDUTProcessor extends AbstractProcessor {
                             String stepTime = method.getParameters().get(0).getSimpleName().toString();
                             clsBuilder.buildStep(stepTime, methodBuilder);
                         } else {
-                            clsBuilder.buildStep( methodBuilder);
+                            clsBuilder.buildStep(methodBuilder);
                         }
 //                        methodBody.append("this." +  clkManagerName + ".waitForSteps(\"" + instanceFieldName +"\", " + stepTime + ");\n");
                     } else if (methodName.equals("finish")) {
                         clsBuilder.buildFinish(methodBuilder);
 //                        methodBody.append("this." + clkManagerName + ".shutdown();\n").append("this." + instanceFieldName + ".Finish();\n");
+                    } else if (methodName.equals("reset")) {
+                        clsBuilder.buildReset(methodBuilder);
                     } else {
                         methodBuilder.addCode("System.out.println(\"Calling method: " + methodName + "\");\n");
                         if (!returnType.toString().equals("void")) {
@@ -382,7 +384,6 @@ public class AutoDUTProcessor extends AbstractProcessor {
 //            initializr += ";\n";
 //            rets.add(initializr);
 //        }
-
         if (ioParameters.isPin) {
             String trueInsPin = "this." + insName + "." + prefix;
 //            System.err.println("trueInsPin " + trueInsPin);
@@ -416,7 +417,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     IOParameters subIOS = ioParameters.copy();
                     subIOS.isSon = true;
                     String pinPrefix = prefix + pin.getAnnotation(SubBundle.class).value();
-                    System.err.println("pin prefix" + pinPrefix);
+//                    System.err.println("pin prefix" + pinPrefix);
                     List<String> subreses = constructIO(pinPrefix, pin.getType(), insName, subFieldName, subIOS);
                     rets.addAll(subreses);
                 } else if (pin.isAnnotationPresent(ListPins.class)){
@@ -457,8 +458,8 @@ public class AutoDUTProcessor extends AbstractProcessor {
             } else {
                 return fieldFullName + " = " + pinFullName + ".GetBytes();\n";
             }
-        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
-            if (isIn){
+        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())) {
+            if (isIn) {
                 return pinFullName + ".Set(" + fieldFullName + ");\n";
             } else {
                 return fieldFullName + " = " + pinFullName + ".String();\n";

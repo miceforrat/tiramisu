@@ -1,5 +1,6 @@
 package org.example;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -16,8 +17,12 @@ public class FIFOTest {
     @Before
     public void setUp() {
         fifo = new FIFOAgent();
-        fifo.setup();
         ref = new FIFORef();
+    }
+
+    @After
+    public void tearDown() {
+        fifo.finish();
     }
 
     @Test

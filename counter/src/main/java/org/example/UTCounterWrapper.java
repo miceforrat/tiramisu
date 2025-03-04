@@ -1,9 +1,7 @@
 package org.example;
 
 import com.ut.UT_Counter;
-import org.xaspect.DUTWrapper;
-import org.xaspect.GetMethod;
-import org.xaspect.PostMethod;
+import org.xaspect.*;
 import org.xaspect.datas.Pin;
 
 public interface UTCounterWrapper extends DUTWrapper<UT_Counter> {
@@ -12,5 +10,6 @@ public interface UTCounterWrapper extends DUTWrapper<UT_Counter> {
     void setRst(@Pin int rst);
 
     @GetMethod
-    @Pin("count") int getCnt();
+    @Pin("count") @WatchPoint(conditions = {WatchPointClasses.CountWatchPoint.class},
+            conditionNames = {"test"}) int getCnt();
 }

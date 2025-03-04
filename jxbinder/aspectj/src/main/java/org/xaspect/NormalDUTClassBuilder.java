@@ -18,6 +18,7 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
 
     private String instanceFieldName = "";
 
+    private String resetPinName = "";
 
     @Override
     public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeName dutTypeName, AutoDUT dutInfo) {
@@ -29,25 +30,56 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
         implClassBuilder.addField(dutField);
         String initializeClockStr = "";
 
-        String clockName = dutInfo.clockName();
+        String clockName = dutInfo.value() + dutInfo.clockName();
         if (!clockName.isEmpty()){
             initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
         }
+
+        resetPinName = dutInfo.value() + dutInfo.resetName();
+        String resetStmt = "";
+        if (!resetPinName.isEmpty()){
+            resetStmt = "this.reset();";
+        }
+
+        String fstSetStmt = "";
+        String fstFileName = dutInfo.waveFileName();
+        if (!fstFileName.isEmpty()){
+            fstSetStmt = "this." + instanceFieldName + ".SetWaveform(\"" + fstFileName + "\");\n";
+        }
+
+        String covSetStmt = "";
+        String covFileName = dutInfo.covFileName();
+        if (!covFileName.isEmpty()){
+            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
+        }
+
+
         MethodSpec constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
 //                .addStatement("this.$N = new $T()", instanceFieldName, dutTypeName)
                 .addStatement(initializeClockStr)
+                .addStatement(resetStmt)
+                .addStatement(fstSetStmt)
+                .addStatement(covSetStmt)
                 .build();
         implClassBuilder.addMethod(constructor);
     }
 
     @Override
     public void buildFinish(MethodSpec.Builder methodBuilder) {
+        methodBuilder.addStatement("this." + instanceFieldName + ".Finish();\n");
     }
 
     @Override
     public void buildStep(String term, MethodSpec.Builder methodBuilder) {
         methodBuilder.addCode("this." + instanceFieldName + ".Step(" + term + ");\n");
+    }
+
+    @Override
+    public void buildReset(MethodSpec.Builder methodBuilder) {
+        if (!resetPinName.isEmpty()){
+            methodBuilder.addCode("this." + instanceFieldName + "." + resetPinName + ".Set(1);\n");
+        }
     }
 
     @Override

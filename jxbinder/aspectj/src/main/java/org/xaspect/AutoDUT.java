@@ -11,6 +11,11 @@ public @interface AutoDUT {
     String value() default ""; // prefix for the whole dut, default is none
     String id() default ""; // support for multiple examples
     String clockName() default "";
+    String resetName() default "";
     ConcurrentSupport concurrentSupport() default ConcurrentSupport.NORMAL;
     int waiterCnt() default 1;
+
+    String waveFileName() default "";
+
+    String covFileName() default "";
 }

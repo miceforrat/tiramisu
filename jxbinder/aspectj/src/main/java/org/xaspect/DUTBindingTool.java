@@ -2,6 +2,7 @@ package org.xaspect;
 
 import org.xaspect.datas.*;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -11,9 +12,17 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class DUTBindingTool {
+
+    private static List<String> watchpointsStmts = new ArrayList<>();
+
+    static String WATCHPOINT_MAP_NAME = "watchpointMap";
+
+    static ProcessingEnvironment processingEnv;
 
     static List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName, String outerName){
         String outputPrefix = prefix;
@@ -41,10 +50,13 @@ class DUTBindingTool {
         }
         initializr += ";\n";
         ret.add(initializr);
-        List<String> outputAssigns = constructIO(outputPrefix, returnTypeCls, instanceFieldName, outerName, ios);
 
+        // 将 TypeMirror 转换为 TypeElement
+
+        List<String> outputAssigns = constructIO(outputPrefix, method, instanceFieldName, outerName, ios);
         ret.addAll(outputAssigns);
 
+//        Annotation outerWatchPoint = getAnnotationFromType(method.getReturnType(), WatchPoint.class);
 
         return ret;
     }
@@ -73,66 +85,94 @@ class DUTBindingTool {
             ios.unsigned = pinAnnotation.unsigned();
         }
 
-        return constructIO(inputPrefix, getClassFromTypeMirror(param.asType()), instanceFieldName, inputBundleName, ios);
+        return constructIO(inputPrefix, param, instanceFieldName, inputBundleName, ios);
     }
 
 
-    private static List<String> constructIO(String pre, Class<?> dataClass, String insName, String IOName, IOParameters ioParameters) {
+    private static List<String> constructIO(String pre, Element element, String insName, String IOName, IOParameters ioParameters) {
         String prefix = pre;
-        //bundle类内生的prefix处理
-        if (dataClass.isAnnotationPresent(Bundle.class)){
+        Class<?> dataClass;
+        if (element.getKind() == ElementKind.METHOD){
+            dataClass = getClassFromTypeMirror(((ExecutableElement)element).getReturnType());
+        } else{
+            dataClass = getClassFromTypeMirror(element.asType());
+        }
+        // 处理 Bundle 注解
+        if (dataClass.getAnnotation(Bundle.class) != null) {
             prefix += dataClass.getAnnotation(Bundle.class).value();
         }
 
         List<String> rets = new ArrayList<>();
-        String typeName = dataClass.getTypeName();
-        String fieldPrefix;
-        fieldPrefix = IOName;
-
+        String fieldPrefix = IOName;
 
         if (ioParameters.isPin) {
             String trueInsPin = "this." + insName + "." + prefix;
-//            System.err.println("trueInsPin " + trueInsPin);
-//            System.err.println("prefix " + prefix);
             String dataWrapperVar = fieldPrefix;
             rets.add(constructSingleAssignment(dataWrapperVar, dataClass, trueInsPin, ioParameters.isIn, ioParameters.unsigned));
         } else {
-            for (Field pin : dataClass.getDeclaredFields()) {
-                if (pin.isAnnotationPresent(Pin.class)) {
-                    String varName = pin.getName();
-                    String pinName = pin.getAnnotation(Pin.class).value();
-                    boolean unsignedPin = pin.getAnnotation(Pin.class).unsigned();
-                    if (ioParameters.coveringUnsigned){
-                        unsignedPin = ioParameters.unsigned;
+            // 如果元素是类或接口，获取其字段
+            if (element.getKind() == ElementKind.CLASS || element.getKind() == ElementKind.INTERFACE) {
+                TypeElement typeElement = (TypeElement) element;
+                for (Element enclosedElement : typeElement.getEnclosedElements()) {
+                    if (enclosedElement.getKind() == ElementKind.FIELD) {
+                        VariableElement field = (VariableElement) enclosedElement;
+                        processField(field, prefix, insName, fieldPrefix, ioParameters, rets);
                     }
-                    if (pinName.isEmpty()) {
-                        pinName = varName;
-                    }
-
-//                    String trueInsPin = "this." + insName + "." + prefix + pinName;
-                    String dataWrapperVar = fieldPrefix + "." + varName;
-                    String trueInsPin = prefix + pinName;
-                    IOParameters subIOS = ioParameters.copy();
-                    subIOS.isSon = true;
-                    subIOS.isPin = true;
-                    subIOS.unsigned = unsignedPin;
-                    rets.addAll(constructIO(trueInsPin, pin.getType(), insName, dataWrapperVar, subIOS));
-//                    rets.add(constructSingleAssignment(dataWrapperVar, pin.getType(), trueInsPin, ioParameters.isIn, unsignedPin));
-                } else if (pin.isAnnotationPresent(SubBundle.class)) {
-                    String subFieldName = fieldPrefix + "." + pin.getName();
-                    IOParameters subIOS = ioParameters.copy();
-                    subIOS.isSon = true;
-                    String pinPrefix = prefix + pin.getAnnotation(SubBundle.class).value();
-                    System.err.println("pin prefix" + pinPrefix);
-                    List<String> subreses = constructIO(pinPrefix, pin.getType(), insName, subFieldName, subIOS);
-                    rets.addAll(subreses);
-                } else if (pin.isAnnotationPresent(ListPins.class)){
-
                 }
             }
         }
-        
         return rets;
+    }
+
+
+    private static void processField(VariableElement field, String prefix, String insName, String fieldPrefix, IOParameters ioParameters, List<String> rets) {
+        if (field.getAnnotation(Pin.class) != null) {
+            String varName = field.getSimpleName().toString();
+            Pin pinAnnotation = field.getAnnotation(Pin.class);
+            String pinName = pinAnnotation.value();
+            boolean unsignedPin = pinAnnotation.unsigned();
+
+            if (ioParameters.coveringUnsigned) {
+                unsignedPin = ioParameters.unsigned;
+            }
+
+            if (pinName.isEmpty()) {
+                pinName = varName;
+            }
+
+            String dataWrapperVar = fieldPrefix + "." + varName;
+            String trueInsPin = prefix + pinName;
+            IOParameters subIOS = ioParameters.copy();
+            subIOS.isSon = true;
+            subIOS.isPin = true;
+            subIOS.unsigned = unsignedPin;
+            rets.addAll(constructIO(trueInsPin, field, insName, dataWrapperVar, subIOS));
+        } else if (field.getAnnotation(SubBundle.class) != null) {
+            String subFieldName = fieldPrefix + "." + field.getSimpleName().toString();
+            IOParameters subIOS = ioParameters.copy();
+            subIOS.isSon = true;
+            String pinPrefix = prefix + field.getAnnotation(SubBundle.class).value();
+            System.err.println("pin prefix" + pinPrefix);
+            List<String> subreses = constructIO(pinPrefix, field, insName, subFieldName, subIOS);
+            rets.addAll(subreses);
+        } else if (field.getAnnotation(ListPins.class) != null) {
+            // 处理 ListPins 注解
+        }
+    }
+
+    private static void CheckWatchPoints(String watchedVarName, Class<? extends WatchCondition>[] conditions, String[] names){
+        if (conditions.length == 0){
+            return;
+        }
+        if (conditions.length != names.length){
+            throw new IllegalArgumentException("Number of conditions does not match number of ids");
+        }
+        for (int i = 0; i < conditions.length; i++){
+            String checkStmt = WATCHPOINT_MAP_NAME + ".put("+ WATCHPOINT_MAP_NAME + ", getOrDefault(\"" + names[i] + "\") + "
+                    + conditions[i].getCanonicalName() +".check(" + watchedVarName+") ? 1 : 0)";
+            watchpointsStmts.add(checkStmt);
+            System.err.println(checkStmt);
+        }
     }
 
     static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinFullName, boolean isIn, boolean unsigned){
