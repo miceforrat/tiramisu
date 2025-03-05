@@ -4,12 +4,12 @@ import org.xaspect.WatchCondition;
 import org.xaspect.WatchPoint;
 
 import java.lang.annotation.Annotation;
+import java.util.HashMap;
+import java.util.Map;
 
-public class WatchPointClasses {
-    public static class CountWatchPoint implements WatchCondition {
-        @Override
-        public boolean check(Object o) {
-            return (int) o == 2;
-        }
+public class WatchPointClasses  {
+    public static boolean check(Object o) {
+        return (int) o == 2;
     }
 }
+

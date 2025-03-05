@@ -7,10 +7,14 @@ import org.xaspect.ConcurrentSupport;
 public class CounterDriver {
 //    private UT_Counter dut = new UT_Counter();
 
-    @AutoDUT(clockName = "clk", concurrentSupport = ConcurrentSupport.SEPARATE_THREAD)
+    @AutoDUT(clockName = "clk")
     private UTCounterWrapper wrapper;
 
     CounterDriver(){
+    }
+
+    public void finish(){
+        wrapper.finish();
     }
 
     public int tick(){

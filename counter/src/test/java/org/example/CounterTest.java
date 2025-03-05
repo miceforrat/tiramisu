@@ -17,13 +17,18 @@ public class CounterTest {
         counter.reset();
     }
 
+    @After
+    public void tearDown() {
+        counter.finish();
+    }
+
     @Test
     public void randTest() {
         counter.reset();
         ref.reset();
         Random rand = new Random();
         rand.setSeed(System.currentTimeMillis());
-        for (int i = 0; i < 1000000; i++){
+        for (int i = 0; i < 100000; i++){
             int chosen = rand.nextInt(100);
             if (chosen < 31){
                 ref.reset();

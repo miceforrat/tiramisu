@@ -10,6 +10,7 @@ public interface UTCounterWrapper extends DUTWrapper<UT_Counter> {
     void setRst(@Pin int rst);
 
     @GetMethod
-    @Pin("count") @WatchPoint(conditions = {WatchPointClasses.CountWatchPoint.class},
+    @Pin("count") @WatchPoint(conditionClassNames = {"WatchPointClasses"},
+            conditionMethodNames = {"check"},
             conditionNames = {"test"}) int getCnt();
 }

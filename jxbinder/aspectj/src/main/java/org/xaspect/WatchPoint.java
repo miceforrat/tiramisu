@@ -10,5 +10,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD, ElementType.TYPE_USE})
 public @interface WatchPoint {
     String[] conditionNames() default {};
-    Class<? extends WatchCondition>[] conditions() default {};
+    String[] conditionClassNames() default {};
+    String[] conditionMethodNames() default {};
 }

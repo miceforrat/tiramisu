@@ -15,6 +15,11 @@ public class ALUTestWrapperImpl1 implements ALUTestWrapper {
 
     private final int WAITERS = 1;
 
+    @Override
+    public void reset() {
+
+    }
+
     private boolean running = true;
 
     private final BlockingQueue<DUTReq<?>> reqs = new LinkedBlockingQueue<>();

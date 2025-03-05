@@ -8,9 +8,10 @@ import com.squareup.javapoet.TypeSpec;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.xaspect.DUTBindingTool.*;
 
@@ -53,6 +54,10 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
             covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
         }
 
+        FieldSpec wpField = FieldSpec.builder(getWatchPointTypeName(),WATCHPOINT_MAP_NAME,Modifier.PRIVATE)
+                .initializer("new $T<>()", HashMap.class)
+                .build();
+        implClassBuilder.addField(wpField);
 
         MethodSpec constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PUBLIC)
@@ -68,6 +73,13 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     @Override
     public void buildFinish(MethodSpec.Builder methodBuilder) {
         methodBuilder.addStatement("this." + instanceFieldName + ".Finish();\n");
+        methodBuilder.addStatement("        for (String wpName: $N.keySet()){\n" +
+                "            System.err.println(wpName +\": \" + $N.get(wpName));\n" +
+                "        }", WATCHPOINT_MAP_NAME, WATCHPOINT_MAP_NAME);
+//        Map<String, Integer> watchPointMap = new HashMap<>();
+//        for (String wpName: watchPointMap.keySet()){
+//            System.out.println(watchPointMap.get(wpName));
+//        }
     }
 
     @Override
@@ -85,6 +97,8 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     @Override
     public void buildStep(MethodSpec.Builder methodBuilder) {
         methodBuilder.addCode("this." + instanceFieldName + ".Step();\n");
+//        methodBuilder.addCode("AfterStep();\n");
+
     }
 
     @Override
@@ -145,6 +159,9 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
 
     @Override
     public TypeSpec build(TypeSpec.Builder implClassBuilder) {
+//        MethodSpec.Builder builder = MethodSpec.methodBuilder("AfterStep").addModifiers(Modifier.PUBLIC).returns(TypeName.VOID);
+//        getWatchpointsStmts().forEach(builder::addStatement);
+//        implClassBuilder.addMethod(builder.build());
         return implClassBuilder.build();
     }
 }

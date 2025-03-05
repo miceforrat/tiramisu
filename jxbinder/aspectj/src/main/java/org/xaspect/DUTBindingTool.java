@@ -1,5 +1,7 @@
 package org.xaspect;
 
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.ParameterizedTypeName;
 import org.xaspect.datas.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -10,6 +12,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,9 +23,21 @@ class DUTBindingTool {
 
     private static List<String> watchpointsStmts = new ArrayList<>();
 
+    static List<String> getWatchpointsStmts() {
+        return watchpointsStmts;
+    }
+
     static String WATCHPOINT_MAP_NAME = "watchpointMap";
 
     static ProcessingEnvironment processingEnv;
+
+    static ParameterizedTypeName getWatchPointTypeName(){
+        return ParameterizedTypeName.get(
+                ClassName.get(Map.class),
+                ClassName.get(String.class),
+                ClassName.get(Integer.class)
+        );
+    }
 
     static List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName, String outerName){
         String outputPrefix = prefix;
@@ -92,8 +107,15 @@ class DUTBindingTool {
     private static List<String> constructIO(String pre, Element element, String insName, String IOName, IOParameters ioParameters) {
         String prefix = pre;
         Class<?> dataClass;
+        String trueInsPin = "this." + insName + "." + prefix;
+        List<String> laterChecks = new ArrayList<>();
         if (element.getKind() == ElementKind.METHOD){
             dataClass = getClassFromTypeMirror(((ExecutableElement)element).getReturnType());
+            Annotation wp = getAnnotationFromType(((ExecutableElement) element).getReturnType(), WatchPoint.class);
+            if (wp != null){
+//                WatchPoint watchPoint = (WatchPoint) wp;
+                laterChecks = checkWatchPoints(IOName, ((WatchPoint) wp).conditionClassNames(), ((WatchPoint) wp).conditionMethodNames(), ((WatchPoint) wp).conditionNames());
+            }
         } else{
             dataClass = getClassFromTypeMirror(element.asType());
         }
@@ -106,9 +128,7 @@ class DUTBindingTool {
         String fieldPrefix = IOName;
 
         if (ioParameters.isPin) {
-            String trueInsPin = "this." + insName + "." + prefix;
-            String dataWrapperVar = fieldPrefix;
-            rets.add(constructSingleAssignment(dataWrapperVar, dataClass, trueInsPin, ioParameters.isIn, ioParameters.unsigned));
+            rets.add(constructSingleAssignment(fieldPrefix, dataClass, trueInsPin, ioParameters.isIn, ioParameters.unsigned));
         } else {
             // 如果元素是类或接口，获取其字段
             if (element.getKind() == ElementKind.CLASS || element.getKind() == ElementKind.INTERFACE) {
@@ -121,6 +141,7 @@ class DUTBindingTool {
                 }
             }
         }
+        rets.addAll(laterChecks);
         return rets;
     }
 
@@ -160,63 +181,85 @@ class DUTBindingTool {
         }
     }
 
-    private static void CheckWatchPoints(String watchedVarName, Class<? extends WatchCondition>[] conditions, String[] names){
-        if (conditions.length == 0){
-            return;
+    private static List<String> checkWatchPoints(String watchedVarName, String[] conditionClasses, String[] conditionMethods, String[] names){
+        List<String> rets = new ArrayList<>();
+        if (conditionClasses.length == 0){
+            return rets;
         }
-        if (conditions.length != names.length){
+        if (conditionClasses.length != names.length || conditionMethods.length != names.length){
             throw new IllegalArgumentException("Number of conditions does not match number of ids");
         }
-        for (int i = 0; i < conditions.length; i++){
-            String checkStmt = WATCHPOINT_MAP_NAME + ".put("+ WATCHPOINT_MAP_NAME + ", getOrDefault(\"" + names[i] + "\") + "
-                    + conditions[i].getCanonicalName() +".check(" + watchedVarName+") ? 1 : 0)";
-            watchpointsStmts.add(checkStmt);
-            System.err.println(checkStmt);
+        for (int i = 0; i < conditionClasses.length; i++){
+            String checkStmt = WATCHPOINT_MAP_NAME + ".put(\""+  names[i] +"\", "+  WATCHPOINT_MAP_NAME + ".getOrDefault(\"" + names[i] + "\", 0) + ("
+                    + conditionClasses[i] +"." + conditionMethods[i] + "(" + watchedVarName+") ? 1 : 0));\n";
+//            watchpointsStmts.add(checkStmt);
+            rets.add(checkStmt);
+//            System.err.println(checkStmt);
         }
+        return rets;
     }
 
-    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinFullName, boolean isIn, boolean unsigned){
+    private static String getBasicTypeValStr(Class<?> fieldType){
         if (isInteger(fieldType)){
-            if (isIn){
-                return pinFullName + ".Set(" + fieldFullName + ");\n";
+            return ".intValue()";
 
-            } else {
-
-                String signedGet = unsigned? "U()": "S()";
-                String getIntString = signedGet + ".intValue()";
-                return fieldFullName + " = " + pinFullName + "." + getIntString + ";\n";
-            }
         } else if (isLong(fieldType)){
-            if (isIn){
-                return pinFullName + ".Set(" + fieldFullName + ");\n";
-            } else {
-                String signedGet = unsigned? "U()": "S()";
-                String getLongString = signedGet + ".longValue()";
-                return fieldFullName + " = " + pinFullName + "." + getLongString + ";\n";
-            }
-        } else if (isByteArray(fieldType)){
-            if (isIn){
-                return pinFullName + ".Set(" + fieldFullName + ");\n";
-            } else {
-                return fieldFullName + " = " + pinFullName + ".GetBytes();\n";
-            }
-        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
-            if (isIn){
-                return pinFullName + ".Set(" + fieldFullName + ");\n";
-            } else {
-                return fieldFullName + " = " + pinFullName + ".String();\n";
-            }
-        } else if (fieldType.getCanonicalName().equals(BigInteger.class.getCanonicalName())){
-            if (isIn){
-                return pinFullName + ".Set(" + fieldFullName + ");\n";
-            } else {
-                String signedGet = unsigned? "U()": "S()";
-                return fieldFullName + " = " + pinFullName + "." + signedGet  + ";\n";
-            }
+            return ".longValue()";
 
+        } else if (isByteArray(fieldType)){
+            return ".GetBytes()";
+        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
+            return ".String()";
+        } else if (fieldType.getCanonicalName().equals(BigInteger.class.getCanonicalName())){
+            return "";
         }
 
         return "";
+    }
+
+    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinFullName, boolean isIn, boolean unsigned){
+//        if (isInteger(fieldType)){
+//            if (isIn){
+//                return pinFullName + ".Set(" + fieldFullName + ");\n";
+//
+//            } else {
+//
+//                String signedGet = unsigned? "U()": "S()";
+//                String getIntString = signedGet + ".intValue()";
+//                return fieldFullName + " = " + pinFullName + "." + getIntString + ";\n";
+//            }
+//        } else if (isLong(fieldType)){
+//            if (isIn){
+//                return pinFullName + ".Set(" + fieldFullName + ");\n";
+//            } else {
+//                String signedGet = unsigned? "U()": "S()";
+//                String getLongString = signedGet + ".longValue()";
+//                return fieldFullName + " = " + pinFullName + "." + getLongString + ";\n";
+//            }
+//        } else if (isByteArray(fieldType)){
+//            if (isIn){
+//                return pinFullName + ".Set(" + fieldFullName + ");\n";
+//            } else {
+//                return fieldFullName + " = " + pinFullName + ".GetBytes();\n";
+//            }
+//        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
+//            if (isIn){
+//                return pinFullName + ".Set(" + fieldFullName + ");\n";
+//            } else {
+//                return fieldFullName + " = " + pinFullName + ".String();\n";
+//            }
+//        } else if (fieldType.getCanonicalName().equals(BigInteger.class.getCanonicalName())){
+        if (isIn){
+            return pinFullName + ".Set(" + fieldFullName + ");\n";
+        } else {
+            String signedGet = unsigned? "U()": "S()";
+            return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
+        }
+
+//        }
+
+
+//        return "";
     }
 
     private static boolean isInteger(Class<?> fieldType){
