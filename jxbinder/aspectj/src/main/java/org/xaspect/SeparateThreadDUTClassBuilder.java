@@ -7,6 +7,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -41,8 +42,6 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
 
     private static final String OUT_VALUE_BUNDLES = "outValueMap";
 
-    private MethodSpec.Builder constructorBuilder;
-
     private String resetPinName = "";
 
     @Override
@@ -63,9 +62,10 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
     }
 
     @Override
-    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeName typeName, AutoDUT dutInfo) {
+    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUT dutInfo) {
         String dutId = dutInfo.id();
 
+        TypeName typeName = DUTBindingTool.getTypeNameFromTypeElement(typeElement);
         this.instanceFieldName = typeName.toString().replace(".", "") + "Instance" + dutId;
         FieldSpec dutField = FieldSpec.builder(typeName, instanceFieldName, Modifier.PRIVATE)
                 .build();

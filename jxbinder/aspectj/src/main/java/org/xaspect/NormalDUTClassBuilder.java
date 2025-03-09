@@ -7,6 +7,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,8 +23,9 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     private String resetPinName = "";
 
     @Override
-    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeName dutTypeName, AutoDUT dutInfo) {
+    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUT dutInfo) {
         String dutId = dutInfo.id();
+        TypeName dutTypeName = DUTBindingTool.getTypeNameFromTypeElement(typeElement);
         this.instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
         FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
                 .initializer("new $T()", dutTypeName)
@@ -115,11 +117,11 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     public void buildPostMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
         String postPrefix = prefix + method.getAnnotation(PostMethod.class).prefix();
 //        List<String> res = constructPostMethod(method, postPrefix, instanceFieldName);
-        constructPostMethod(method, postPrefix, instanceFieldName).forEach(methodBuilder::addCode);
+        constructPostMethod(method, postPrefix).forEach(methodBuilder::addCode);
     }
 
 
-    private List<String> constructPostMethod(ExecutableElement method, String prefix, String instanceFieldName) {
+    private List<String> constructPostMethod(ExecutableElement method, String prefix) {
         List<? extends VariableElement> params = method.getParameters();
         List<String> ret = new ArrayList<>();
         for (VariableElement param : params) {
@@ -153,6 +155,7 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
             ret.addAll(constructOneParamBinding(prefix, param, inputBundleName, this.instanceFieldName));
 
         }
+        System.out.println("to add:" + ret);
         return ret;
     }
 

@@ -5,12 +5,13 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import java.util.List;
 
 public interface DUTClassBuilder {
 
 
-    void buildConstructor(TypeSpec.Builder implClassBuilder, TypeName typeName, AutoDUT dutInfo);
+    void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement element, AutoDUT dutInfo);
 
 
     void buildFinish(MethodSpec.Builder methodBuilder);

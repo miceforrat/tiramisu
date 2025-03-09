@@ -2,6 +2,7 @@ package org.xaspect;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import org.xaspect.datas.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -10,6 +11,8 @@ import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -68,7 +71,7 @@ class DUTBindingTool {
 
         // 将 TypeMirror 转换为 TypeElement
 
-        List<String> outputAssigns = constructIO(outputPrefix, method, instanceFieldName, outerName, ios);
+        List<String> outputAssigns = constructIO(outputPrefix, method, new InstanceDUTTypeInfo(instanceFieldName, null), outerName, ios);
         ret.addAll(outputAssigns);
 
 //        Annotation outerWatchPoint = getAnnotationFromType(method.getReturnType(), WatchPoint.class);
@@ -100,53 +103,145 @@ class DUTBindingTool {
             ios.unsigned = pinAnnotation.unsigned();
         }
 
-        return constructIO(inputPrefix, param, instanceFieldName, inputBundleName, ios);
+        return constructIO(inputPrefix, param, new InstanceDUTTypeInfo(instanceFieldName, null), inputBundleName, ios);
     }
 
 
-    private static List<String> constructIO(String pre, Element element, String insName, String IOName, IOParameters ioParameters) {
+    private static List<String> constructIO(String pre, Element element, InstanceDUTTypeInfo insInfo, String IOName, IOParameters ioParameters) {
         String prefix = pre;
+        TypeElement dataTypeElement;
         Class<?> dataClass;
-        String trueInsPin = "this." + insName + "." + prefix;
+//        String trueInsPin = "this." + insName + "." + prefix;
         List<String> laterChecks = new ArrayList<>();
-        if (element.getKind() == ElementKind.METHOD){
-            dataClass = getClassFromTypeMirror(((ExecutableElement)element).getReturnType());
+        if (element.getKind() == ElementKind.METHOD) {
+            System.err.println("is Method!");
+
+            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
+            System.err.println("is Method!");
+            dataClass = getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
             Annotation wp = getAnnotationFromType(((ExecutableElement) element).getReturnType(), WatchPoint.class);
-            if (wp != null){
+            if (wp != null) {
 //                WatchPoint watchPoint = (WatchPoint) wp;
                 laterChecks = checkWatchPoints(IOName, ((WatchPoint) wp).conditionClassNames(), ((WatchPoint) wp).conditionMethodNames(), ((WatchPoint) wp).conditionNames());
             }
-        } else{
+        } else {
+            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
             dataClass = getClassFromTypeMirror(element.asType());
+
         }
+//        System.err.println("deal with bundle annotation");
         // 处理 Bundle 注解
-        if (dataClass.getAnnotation(Bundle.class) != null) {
-            prefix += dataClass.getAnnotation(Bundle.class).value();
+        if (dataTypeElement != null) {
+            Bundle bundleAnnotation = dataTypeElement.getAnnotation(Bundle.class);
+            if (bundleAnnotation != null) {
+                prefix += bundleAnnotation.value();
+            }
         }
 
         List<String> rets = new ArrayList<>();
         String fieldPrefix = IOName;
+        System.err.println("is pin?" + ioParameters.isPin);
 
         if (ioParameters.isPin) {
-            rets.add(constructSingleAssignment(fieldPrefix, dataClass, trueInsPin, ioParameters.isIn, ioParameters.unsigned));
+            rets.add(constructSingleAssignment(fieldPrefix, dataClass, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
         } else {
             // 如果元素是类或接口，获取其字段
-            if (element.getKind() == ElementKind.CLASS || element.getKind() == ElementKind.INTERFACE) {
-                TypeElement typeElement = (TypeElement) element;
-                for (Element enclosedElement : typeElement.getEnclosedElements()) {
-                    if (enclosedElement.getKind() == ElementKind.FIELD) {
-                        VariableElement field = (VariableElement) enclosedElement;
-                        processField(field, prefix, insName, fieldPrefix, ioParameters, rets);
-                    }
+//            System.err.println("element type: " + element.getKind());
+//            if (element.getKind() == ElementKind.CLASS || element.getKind() == ElementKind.INTERFACE) {
+//                typeElement = (TypeElement) element;
+            System.err.println("entering class");
+            for (Element enclosedElement : dataTypeElement.getEnclosedElements()) {
+                if (enclosedElement.getKind() == ElementKind.FIELD) {
+                    VariableElement field = (VariableElement) enclosedElement;
+                    processField(field, prefix, insInfo, fieldPrefix, ioParameters, rets);
+                    System.err.println("is field: check rets: " + rets);
                 }
             }
+//            }
         }
         rets.addAll(laterChecks);
         return rets;
     }
 
+//    private static List<String> constructIO(String pre, Element element, InstanceDUTTypeInfo insInfo, String IOName, IOParameters ioParameters) {
+//        String prefix = pre;
+//        TypeMirror dataTypeMirror;
+//        boolean isByteArray = false;
+//        TypeElement dataTypeElement = null;
+//        List<String> laterChecks = new ArrayList<>();
+//
+//        // 根据 element 类型获得 TypeMirror（可能是方法返回值或参数类型）
+//        if (element.getKind() == ElementKind.METHOD) {
+//            ExecutableElement methodElement = (ExecutableElement) element;
+//            dataTypeMirror = methodElement.getReturnType();
+//            Annotation wp = getAnnotationFromType(dataTypeMirror, WatchPoint.class);
+//            if (wp != null) {
+//                laterChecks = checkWatchPoints(IOName, ((WatchPoint) wp).conditionClassNames(),
+//                        ((WatchPoint) wp).conditionMethodNames(), ((WatchPoint) wp).conditionNames());
+//            }
+//        } else if (element.getKind() == ElementKind.PARAMETER) {
+//            dataTypeMirror = ((VariableElement) element).asType();
+//        } else {
+//            throw new RuntimeException("illegal inputs!");
+//        }
+//
+//        // 检查是否为数组类型，且组件类型为 byte（即 byte[]）
+//        if (dataTypeMirror.getKind() == TypeKind.ARRAY) {
+//            ArrayType arrayType = (ArrayType) dataTypeMirror;
+//            if (arrayType.getComponentType().getKind() == TypeKind.BYTE) {
+//                isByteArray = true;
+//            } else {
+//                // 其他数组类型可根据需要处理
+//                dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(dataTypeMirror);
+//            }
+//        } else {
+//            // 非数组类型直接转换为 TypeElement
+//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(dataTypeMirror);
+//        }
+//
+//        // 如果不是 byte[]，处理 Bundle 注解
+//        if (!isByteArray && dataTypeElement != null) {
+//            Bundle bundleAnnotation = dataTypeElement.getAnnotation(Bundle.class);
+//            if (bundleAnnotation != null) {
+//                prefix += bundleAnnotation.value();
+//            }
+//        }
+//
+//        List<String> rets = new ArrayList<>();
+//        String fieldPrefix = IOName;
+//        System.err.println("is pin? " + ioParameters.isPin);
+//
+//        if (ioParameters.isPin) {
+//            // 对于 pin 模式，根据是否为 byte[] 分情况处理
+//            if (isByteArray) {
+//                // 这里直接传入 "byte[]" 字符串，你也可以根据需要特殊处理
+//                rets.add(constructSingleAssignment(fieldPrefix, "byte[]", prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
+//            } else {
+//                rets.add(constructSingleAssignment(fieldPrefix, dataTypeElement.getQualifiedName().toString(), prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
+//            }
+//        } else {
+//            // 非 pin 模式下，如果不是 byte[]，处理类中的字段
+//            if (!isByteArray) {
+//                System.err.println("entering class");
+//                for (Element enclosedElement : dataTypeElement.getEnclosedElements()) {
+//                    if (enclosedElement.getKind() == ElementKind.FIELD) {
+//                        VariableElement field = (VariableElement) enclosedElement;
+//                        processField(field, prefix, insInfo, fieldPrefix, ioParameters, rets);
+//                        System.err.println("processed field: " + field.getSimpleName() + " -> results: " + rets);
+//                    }
+//                }
+//            } else {
+//                // 对于 byte[] 类型，通常不存在字段可处理
+//                System.err.println("byte[] 类型不具备可遍历的字段。");
+//            }
+//        }
+//
+//        rets.addAll(laterChecks);
+//        return rets;
+//    }
+//
 
-    private static void processField(VariableElement field, String prefix, String insName, String fieldPrefix, IOParameters ioParameters, List<String> rets) {
+    private static void processField(VariableElement field, String prefix, InstanceDUTTypeInfo insInfo, String fieldPrefix, IOParameters ioParameters, List<String> rets) {
         if (field.getAnnotation(Pin.class) != null) {
             String varName = field.getSimpleName().toString();
             Pin pinAnnotation = field.getAnnotation(Pin.class);
@@ -167,14 +262,14 @@ class DUTBindingTool {
             subIOS.isSon = true;
             subIOS.isPin = true;
             subIOS.unsigned = unsignedPin;
-            rets.addAll(constructIO(trueInsPin, field, insName, dataWrapperVar, subIOS));
+            rets.addAll(constructIO(trueInsPin, field, insInfo, dataWrapperVar, subIOS));
         } else if (field.getAnnotation(SubBundle.class) != null) {
             String subFieldName = fieldPrefix + "." + field.getSimpleName().toString();
             IOParameters subIOS = ioParameters.copy();
             subIOS.isSon = true;
             String pinPrefix = prefix + field.getAnnotation(SubBundle.class).value();
             System.err.println("pin prefix" + pinPrefix);
-            List<String> subreses = constructIO(pinPrefix, field, insName, subFieldName, subIOS);
+            List<String> subreses = constructIO(pinPrefix, field, insInfo, subFieldName, subIOS);
             rets.addAll(subreses);
         } else if (field.getAnnotation(ListPins.class) != null) {
             // 处理 ListPins 注解
@@ -217,7 +312,8 @@ class DUTBindingTool {
         return "";
     }
 
-    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinFullName, boolean isIn, boolean unsigned){
+    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
+        String pinFullName = insInfo.getInstanceName() + "." + pinName;
 //        if (isInteger(fieldType)){
 //            if (isIn){
 //                return pinFullName + ".Set(" + fieldFullName + ");\n";
@@ -355,6 +451,44 @@ class DUTBindingTool {
             default:
                 throw new IllegalArgumentException("Unsupported primitive type: " + kind);
         }
+    }
+
+    static TypeName getTypeNameFromTypeElement(TypeElement fieldType) {
+//        System.out.println(field.asType());
+        TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
+        return ClassName.bestGuess(dutType.toString());
+    }
+
+
+    static TypeMirror getInheritingDUTWrapperType(TypeElement fieldType) {
+        Types typeUtils = processingEnv.getTypeUtils();
+        Elements elementUtils = processingEnv.getElementUtils();
+
+        // 获取 DUTWrapper 的类型
+        TypeElement dutWrapperElement = elementUtils.getTypeElement(DUTWrapper.class.getCanonicalName()); // 替换为 DUTWrapper 的全限定名
+        if (dutWrapperElement == null) {
+            throw new IllegalStateException("DUTWrapper not found in the classpath");
+        }
+        DeclaredType dutWrapperType = (DeclaredType) dutWrapperElement.asType();
+
+        // 检查接口是否直接继承 DUTWrapper
+        for (TypeMirror superInterface : fieldType.getInterfaces()) {
+            if (typeUtils.isAssignable(typeUtils.erasure(superInterface), typeUtils.erasure(dutWrapperType))) {
+                // 检查泛型信息
+                if (superInterface instanceof DeclaredType) {
+                    DeclaredType declaredType = (DeclaredType) superInterface;
+                    if (declaredType.getTypeArguments().size() == 1) {
+                        // 检查泛型参数是否符合预期
+//                        TypeMirror genericArgument = declaredType.getTypeArguments().get(0);
+                        // 添加更多泛型验证逻辑（如果需要）
+                        return declaredType.getTypeArguments().get(0);
+                    } else {
+                        throw new IllegalStateException("DUTWrapper interface must have exactly one type argument");
+                    }
+                }
+            }
+        }
+        throw new IllegalStateException("not extends from DUTWrapper");
     }
 
 

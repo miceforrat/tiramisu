@@ -18,6 +18,8 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.*;
 
+import static org.xaspect.DUTBindingTool.getInheritingDUTWrapperType;
+
 @AutoService(Processor.class)
 public class AutoDUTProcessor extends AbstractProcessor {
 
@@ -57,8 +59,8 @@ public class AutoDUTProcessor extends AbstractProcessor {
 //        String fieldName = field.getSimpleName().toString();
         TypeElement fieldType = elementUtils.getTypeElement(field.asType().toString());
 //        System.out.println(field.asType());
-        TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
-        TypeName dutTypeName = ClassName.bestGuess(dutType.toString());
+//        TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
+//        TypeName dutTypeName = ClassName.bestGuess(dutType.toString());
         String packageName = processingEnv.getElementUtils().getPackageOf(fieldType).getQualifiedName().toString();
 //        System.out.println(packageName);
         // 获取字段类型和注解信息
@@ -89,9 +91,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
             classBuilder = new NormalDUTClassBuilder();
 
         }
-        classBuilder.buildConstructor(implClassBuilder, dutTypeName, autoDUT);
+        classBuilder.buildConstructor(implClassBuilder, fieldType, autoDUT);
 //        // 添加字段和构造方法
-        String instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
+//        String instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
 //        FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
 //                .build();
 //        implClassBuilder.addField(dutField);
@@ -109,7 +111,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 //                .build();
 //        implClassBuilder.addMethod(constructor);
 
-        addMethodsToImplClass(implClassBuilder, fieldType, new ConstantNames(instanceFieldName, ""), prefix, processingEnv.getTypeUtils(), classBuilder);
+        addMethodsToImplClass(implClassBuilder, fieldType, prefix, processingEnv.getTypeUtils(), classBuilder);
 
         // 获取`@AutoDUT`修饰类的包路径
         // 写入生成的类到相同包路径
@@ -124,40 +126,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     }
 
-    private TypeMirror getInheritingDUTWrapperType(TypeElement fieldType) {
-        Types typeUtils = processingEnv.getTypeUtils();
-        Elements elementUtils = processingEnv.getElementUtils();
-
-        // 获取 DUTWrapper 的类型
-        TypeElement dutWrapperElement = elementUtils.getTypeElement(DUTWrapper.class.getCanonicalName()); // 替换为 DUTWrapper 的全限定名
-        if (dutWrapperElement == null) {
-            throw new IllegalStateException("DUTWrapper not found in the classpath");
-        }
-        DeclaredType dutWrapperType = (DeclaredType) dutWrapperElement.asType();
-
-        // 检查接口是否直接继承 DUTWrapper
-        for (TypeMirror superInterface : fieldType.getInterfaces()) {
-            if (typeUtils.isAssignable(typeUtils.erasure(superInterface), typeUtils.erasure(dutWrapperType))) {
-                // 检查泛型信息
-                if (superInterface instanceof DeclaredType) {
-                    DeclaredType declaredType = (DeclaredType) superInterface;
-                    if (declaredType.getTypeArguments().size() == 1) {
-                        // 检查泛型参数是否符合预期
-//                        TypeMirror genericArgument = declaredType.getTypeArguments().get(0);
-                        // 添加更多泛型验证逻辑（如果需要）
-                        return declaredType.getTypeArguments().get(0);
-                    } else {
-                        throw new IllegalStateException("DUTWrapper interface must have exactly one type argument");
-                    }
-                }
-            }
-        }
-        throw new IllegalStateException("not extends from DUTWrapper");
-    }
-
-    private void addMethodsToImplClass(TypeSpec.Builder implClassBuilder, TypeElement fieldType, ConstantNames constantNames, String prefix, Types typeUtils, DUTClassBuilder clsBuilder) {
+    private void addMethodsToImplClass(TypeSpec.Builder implClassBuilder, TypeElement fieldType, String prefix, Types typeUtils, DUTClassBuilder clsBuilder) {
         Set<String> processedMethods = new HashSet<>(); // 防止重复处理同名方法
-        String instanceFieldName = constantNames.instanceName;
+//        String instanceFieldName = constantNames.instanceName;
         // 遍历当前类型及其父类或接口
         for (TypeElement currentElement : getAllSuperTypes(fieldType, typeUtils)) {
             for (Element enclosedElement : currentElement.getEnclosedElements()) {
