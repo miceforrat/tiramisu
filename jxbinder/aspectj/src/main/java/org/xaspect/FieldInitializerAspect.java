@@ -2,16 +2,13 @@ package org.xaspect;
 
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.*;
 
 import java.lang.reflect.*;
 import java.util.HashMap;
 import java.util.Map;
 
 
-import org.aspectj.lang.annotation.After;
-import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.xaspect.datas.Pin;
 
@@ -28,20 +25,20 @@ public class FieldInitializerAspect {
     public void constructorCall(Object obj) {}
 
     // 在构造方法调用后执行初始化逻辑
-    @After("constructorCall(obj)")
+    @Before("constructorCall(obj)")
     public void initializeFields(Object obj) {
         Class<?> clazz = obj.getClass();
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
             // 检查字段是否带有 @AutoDUT 注解
-            if (field.isAnnotationPresent(AutoDUT.class)) {
+            if (field.isAnnotationPresent(AutoDUTDao.class)) {
                 try {
                     field.setAccessible(true);
 
                     // 如果字段未初始化，则自动赋值
                     if (field.get(obj) == null) {
                         Class<?> fieldType = field.getType();
-                        if (isInterfaceInherited(fieldType, DUTWrapper.class)) {
+                        if (isInterfaceInherited(fieldType, DUTDao.class)) {
                             // 注入实现类实例
                             field.set(obj, wrapperConstruct(field));
                         }
@@ -89,16 +86,16 @@ public class FieldInitializerAspect {
         return result;
     }
 
-    private Map<String, DUTWrapper<?>> existingWrappers = new HashMap<>();
+    private Map<String, DUTDao<?>> existingWrappers = new HashMap<>();
 
-    private DUTWrapper<?> wrapperConstruct(Field field){
+    private DUTDao<?> wrapperConstruct(Field field){
 
         Class<?> fieldType = field.getType();
-        AutoDUT annotation = field.getAnnotation(AutoDUT.class);
-        String dutId = annotation.id();
+        AutoDUTDao annotation = field.getAnnotation(AutoDUTDao.class);
+//        String dutId = annotation.id();
 
         // 获取实现类的全限定名
-        String implClassName = fieldType.getCanonicalName() + "Impl" + dutId; // 假设生成的类名规则为 "FieldTypeImpl"
+        String implClassName = fieldType.getCanonicalName() + "ImplWithPrefix" + annotation.value(); // 假设生成的类名规则为 "FieldTypeImpl"
 
         if (existingWrappers.get(implClassName) != null) {
             return existingWrappers.get(implClassName);
@@ -108,7 +105,7 @@ public class FieldInitializerAspect {
             // 使用反射加载生成的实现类
             Class<?> implClass = Class.forName(implClassName);
             System.out.println(implClassName);
-            DUTWrapper<?> wrapperImpl = (DUTWrapper<?>) implClass.getConstructor().newInstance();
+            DUTDao<?> wrapperImpl = (DUTDao<?>) implClass.getConstructor().newInstance();
             existingWrappers.put(implClassName, wrapperImpl);
             return wrapperImpl;
             // 使用构造方法实例化实现类
@@ -158,7 +155,7 @@ public class FieldInitializerAspect {
             ParameterizedType parameterizedSuperClass = (ParameterizedType) superClass;
 
             // 检查是否是 DUTWrapper
-            if (parameterizedSuperClass.getRawType() == DUTWrapper.class) {
+            if (parameterizedSuperClass.getRawType() == DUTDao.class) {
                 Type[] typeArgs = parameterizedSuperClass.getActualTypeArguments();
                 if (typeArgs.length > 0 && typeArgs[0] instanceof Class) {
                     return (Class<?>) typeArgs[0];
@@ -176,7 +173,7 @@ public class FieldInitializerAspect {
                 ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
 
                 // 检查是否是 DUTWrapper
-                if (parameterizedType.getRawType() == DUTWrapper.class) {
+                if (parameterizedType.getRawType() == DUTDao.class) {
                     Type[] typeArgs = parameterizedType.getActualTypeArguments();
                     if (typeArgs.length > 0 && typeArgs[0] instanceof Class) {
                         return (Class<?>) typeArgs[0];

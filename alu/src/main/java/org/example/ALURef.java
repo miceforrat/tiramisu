@@ -3,9 +3,9 @@ package org.example;
 public class ALURef {
 
     public int refModel(ALUIO in){
-        int sel = in.sel.sel;
-        int a = in.ab.a;
-        int b = in.ab.b;
+        int sel = in.sel;
+        int a = in.a;
+        int b = in.b;
         int limit = 0xFF;
         switch (sel) {
             case 0b0000: return  (a + b) & limit;

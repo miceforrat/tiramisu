@@ -14,11 +14,8 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -455,17 +452,17 @@ class DUTBindingTool {
 
     static TypeName getTypeNameFromTypeElement(TypeElement fieldType) {
 //        System.out.println(field.asType());
-        TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
+        TypeMirror dutType = getInheritingType(fieldType, DUTDao.class);
         return ClassName.bestGuess(dutType.toString());
     }
 
 
-    static TypeMirror getInheritingDUTWrapperType(TypeElement fieldType) {
+    static TypeMirror getInheritingType(TypeElement fieldType, Class<?> inheritingClass) {
         Types typeUtils = processingEnv.getTypeUtils();
         Elements elementUtils = processingEnv.getElementUtils();
 
         // 获取 DUTWrapper 的类型
-        TypeElement dutWrapperElement = elementUtils.getTypeElement(DUTWrapper.class.getCanonicalName()); // 替换为 DUTWrapper 的全限定名
+        TypeElement dutWrapperElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName()); // 替换为 DUTWrapper 的全限定名
         if (dutWrapperElement == null) {
             throw new IllegalStateException("DUTWrapper not found in the classpath");
         }
@@ -483,12 +480,12 @@ class DUTBindingTool {
                         // 添加更多泛型验证逻辑（如果需要）
                         return declaredType.getTypeArguments().get(0);
                     } else {
-                        throw new IllegalStateException("DUTWrapper interface must have exactly one type argument");
+                        throw new IllegalStateException("DUTDao interface must have exactly one type argument");
                     }
                 }
             }
         }
-        throw new IllegalStateException("not extends from DUTWrapper");
+        throw new IllegalStateException("not extends from DUTDao");
     }
 
 

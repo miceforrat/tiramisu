@@ -10,9 +10,9 @@ public class Main {
         ALUIO in = new ALUIO();
         ALUWrapper wrapper = new ALUWrapper();
         for (int i = 0 ; i < 100000; i++){
-            in.ab.a = random.nextInt( 256);
-            in.ab.b = random.nextInt( 256);
-            in.sel.sel  = random.nextInt( 16);
+            in.a = random.nextInt( 256);
+            in.b = random.nextInt( 256);
+            in.sel  = random.nextInt( 16);
             wrapper.process(in);
 //            System.out.println(wrapper.process(in, 1));
 

@@ -12,7 +12,6 @@ import javax.lang.model.element.VariableElement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.xaspect.DUTBindingTool.*;
 
@@ -23,61 +22,65 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     private String resetPinName = "";
 
     @Override
-    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUT dutInfo) {
-        String dutId = dutInfo.id();
+    public void buildBind(MethodSpec.Builder methodBuilder, ExecutableElement method) {
+        methodBuilder.addStatement("this.$N = $N;\n", instanceFieldName, method.getParameters().get(0).getSimpleName());
+    }
+
+    @Override
+    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUTDao dutInfo) {
         TypeName dutTypeName = DUTBindingTool.getTypeNameFromTypeElement(typeElement);
-        this.instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
+        this.instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance";
         FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
-                .initializer("new $T()", dutTypeName)
+//                .initializer("new $T()", dutTypeName)
                 .build();
         implClassBuilder.addField(dutField);
-        String initializeClockStr = "";
-
-        String clockName = dutInfo.value() + dutInfo.clockName();
-        if (!clockName.isEmpty()){
-            initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
-        }
-
-        resetPinName = dutInfo.value() + dutInfo.resetName();
-        String resetStmt = "";
-        if (!resetPinName.isEmpty()){
-            resetStmt = "this.reset();";
-        }
-
-        String fstSetStmt = "";
-        String fstFileName = dutInfo.waveFileName();
-        if (!fstFileName.isEmpty()){
-            fstSetStmt = "this." + instanceFieldName + ".SetWaveform(\"" + fstFileName + "\");\n";
-        }
-
-        String covSetStmt = "";
-        String covFileName = dutInfo.covFileName();
-        if (!covFileName.isEmpty()){
-            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
-        }
-
-        FieldSpec wpField = FieldSpec.builder(getWatchPointTypeName(),WATCHPOINT_MAP_NAME,Modifier.PRIVATE)
-                .initializer("new $T<>()", HashMap.class)
-                .build();
-        implClassBuilder.addField(wpField);
-
+//        String initializeClockStr = "";
+//
+//        String clockName = dutInfo.value() + dutInfo.clockName();
+//        if (!clockName.isEmpty()){
+//            initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
+//        }
+//
+//        resetPinName = dutInfo.value() + dutInfo.resetName();
+//        String resetStmt = "";
+//        if (!resetPinName.isEmpty()){
+//            resetStmt = "this.reset();";
+//        }
+//
+//        String fstSetStmt = "";
+//        String fstFileName = dutInfo.waveFileName();
+//        if (!fstFileName.isEmpty()){
+//            fstSetStmt = "this." + instanceFieldName + ".SetWaveform(\"" + fstFileName + "\");\n";
+//        }
+//
+//        String covSetStmt = "";
+//        String covFileName = dutInfo.covFileName();
+//        if (!covFileName.isEmpty()){
+//            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
+//        }
+//
+//        FieldSpec wpField = FieldSpec.builder(getWatchPointTypeName(),WATCHPOINT_MAP_NAME,Modifier.PRIVATE)
+//                .initializer("new $T<>()", HashMap.class)
+//                .build();
+//        implClassBuilder.addField(wpField);
+//
         MethodSpec constructor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
-//                .addStatement("this.$N = new $T()", instanceFieldName, dutTypeName)
-                .addStatement(initializeClockStr)
-                .addStatement(resetStmt)
-                .addStatement(fstSetStmt)
-                .addStatement(covSetStmt)
-                .build();
+                .addModifiers(Modifier.PUBLIC).build();
+////                .addStatement("this.$N = new $T()", instanceFieldName, dutTypeName)
+//                .addStatement(initializeClockStr)
+//                .addStatement(resetStmt)
+//                .addStatement(fstSetStmt)
+//                .addStatement(covSetStmt)
+//                .build();
         implClassBuilder.addMethod(constructor);
     }
 
     @Override
     public void buildFinish(MethodSpec.Builder methodBuilder) {
         methodBuilder.addStatement("this." + instanceFieldName + ".Finish();\n");
-        methodBuilder.addStatement("        for (String wpName: $N.keySet()){\n" +
-                "            System.err.println(wpName +\": \" + $N.get(wpName));\n" +
-                "        }", WATCHPOINT_MAP_NAME, WATCHPOINT_MAP_NAME);
+//        methodBuilder.addStatement("        for (String wpName: $N.keySet()){\n" +
+//                "            System.err.println(wpName +\": \" + $N.get(wpName));\n" +
+//                "        }", WATCHPOINT_MAP_NAME, WATCHPOINT_MAP_NAME);
 //        Map<String, Integer> watchPointMap = new HashMap<>();
 //        for (String wpName: watchPointMap.keySet()){
 //            System.out.println(watchPointMap.get(wpName));

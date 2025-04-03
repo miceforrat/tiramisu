@@ -1,15 +1,13 @@
 package org.example;
 
 import com.ut.UT_ALU;
-import com.xspcomm.XClock;
-import com.xspcomm.XData;
 import org.xaspect.datas.Pin;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
-public class ALUTestWrapperImpl1 implements ALUTestWrapper {
+public class ALUTestWrapperImpl1 implements ALUDutDao {
 
     private UT_ALU alu;
 
@@ -33,6 +31,11 @@ public class ALUTestWrapperImpl1 implements ALUTestWrapper {
     private int out = 0;
 
     private List<Supplier<?>> afterStep = new ArrayList<>();
+
+    @Override
+    public void bind(UT_ALU utAlu) {
+
+    }
 
     ALUTestWrapperImpl1() {
 
@@ -58,8 +61,8 @@ public class ALUTestWrapperImpl1 implements ALUTestWrapper {
                     consumerMap.get(req.event).dealWithReq(req);
 //                    if (req.event == DUTEvent.POST_IN){
 //                        ALUIO io = (ALUIO) req.result;
-//                        alu.a.Set(io.ab.a);
-//                        alu.b.Set(io.ab.b);
+//                        alu.a.Set(io.a);
+//                        alu.b.Set(io.b);
 //                        alu.alu_sel.Set(io.sel.sel);
 //                    } else if (req.event == DUTEvent.STEP){
 //                        alu.Step();
@@ -87,9 +90,9 @@ public class ALUTestWrapperImpl1 implements ALUTestWrapper {
             consumerMap.put(DUTEvent.POST_IN, req -> {
                 Map<Integer, Object> map = (HashMap) req.result;
                 ALUIO io = (ALUIO) map.get(0);
-                alu.a.Set(io.ab.a);
-                alu.b.Set(io.ab.b);
-                alu.alu_sel.Set(io.sel.sel);
+                alu.a.Set(io.a);
+                alu.b.Set(io.b);
+                alu.alu_sel.Set(io.sel);
             });
         }
 
@@ -129,25 +132,25 @@ public class ALUTestWrapperImpl1 implements ALUTestWrapper {
         return this.out;
     }
 
-    @Override
-    public void Step() {
-        DUTReq<?> req = new DUTReq<Void>(DUTEvent.STEP);
-        reqs.add(req);
-
-        try {
-            semaphoreMap.get(DUTEvent.STEP).acquire();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    @Override
-    public void Step(int term) {
-        for (int i = 0; i < term; i++){
-            this.Step();
-        }
-    }
+//    @Override
+//    public void Step() {
+//        DUTReq<?> req = new DUTReq<Void>(DUTEvent.STEP);
+//        reqs.add(req);
+//
+//        try {
+//            semaphoreMap.get(DUTEvent.STEP).acquire();
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//    }
+//
+//    @Override
+//    public void Step(int term) {
+//        for (int i = 0; i < term; i++){
+//            this.Step();
+//        }
+//    }
 
     @Override
     public void finish() {

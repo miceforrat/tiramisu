@@ -11,7 +11,7 @@ import java.util.List;
 public interface DUTClassBuilder {
 
 
-    void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement element, AutoDUT dutInfo);
+    void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement element, AutoDUTDao daoInfo);
 
 
     void buildFinish(MethodSpec.Builder methodBuilder);
@@ -25,6 +25,8 @@ public interface DUTClassBuilder {
     void buildPostMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method );
 
     void buildReset(MethodSpec.Builder methodBuilder);
+
+    void buildBind(MethodSpec.Builder methodBuilder, ExecutableElement method);
 
     TypeSpec build(TypeSpec.Builder implClassBuilder);
 }

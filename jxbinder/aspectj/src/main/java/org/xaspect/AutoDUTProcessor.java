@@ -18,7 +18,6 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.*;
 
-import static org.xaspect.DUTBindingTool.getInheritingDUTWrapperType;
 
 @AutoService(Processor.class)
 public class AutoDUTProcessor extends AbstractProcessor {
@@ -37,7 +36,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Collections.singleton(AutoDUT.class.getCanonicalName());
+        return Collections.singleton(AutoDUTDao.class.getCanonicalName());
     }
 
     @Override
@@ -47,7 +46,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        for (Element element : roundEnv.getElementsAnnotatedWith(AutoDUT.class)) {
+        for (Element element : roundEnv.getElementsAnnotatedWith(AutoDUTDao.class)) {
             if (element.getKind() == ElementKind.FIELD) {
                 processField((VariableElement) element);
             }
@@ -64,14 +63,14 @@ public class AutoDUTProcessor extends AbstractProcessor {
         String packageName = processingEnv.getElementUtils().getPackageOf(fieldType).getQualifiedName().toString();
 //        System.out.println(packageName);
         // 获取字段类型和注解信息
-        AutoDUT autoDUT = field.getAnnotation(AutoDUT.class);
+        AutoDUTDao autoDUT = field.getAnnotation(AutoDUTDao.class);
         String prefix = autoDUT.value();
-        String dutId = autoDUT.id();
-        String clockName = autoDUT.clockName();
-        ConcurrentSupport builderType = autoDUT.concurrentSupport();
+//        String dutId = autoDUT.id();
+//        String clockName = autoDUT.clockName();
+//        ConcurrentSupport builderType = autoDUT.concurrentSupport();
 
         // 生成实现类名
-        String implClassName = fieldType.getSimpleName() + "Impl" + dutId;
+        String implClassName = fieldType.getSimpleName() + "ImplWithPrefix" + prefix;
         if (doesClassExist(packageName, implClassName)){
             System.err.println("Class " + implClassName + " already exists, skipping.");
             return;
@@ -85,12 +84,12 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 .addAnnotation(annotation)
                 .addSuperinterface(ClassName.get(fieldType));
         DUTClassBuilder classBuilder;
-        if (builderType == ConcurrentSupport.SEPARATE_THREAD){
-            classBuilder = new SeparateThreadDUTClassBuilder();
-        } else {
-            classBuilder = new NormalDUTClassBuilder();
+//        if (builderType == ConcurrentSupport.SEPARATE_THREAD){
+//            classBuilder = new SeparateThreadDUTClassBuilder();
+//        } else {
+        classBuilder = new NormalDUTClassBuilder();
 
-        }
+//        }
         classBuilder.buildConstructor(implClassBuilder, fieldType, autoDUT);
 //        // 添加字段和构造方法
 //        String instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance" + dutId;
@@ -151,11 +150,16 @@ public class AutoDUTProcessor extends AbstractProcessor {
                             .returns(ClassName.get(returnType));
 
                     // 添加方法参数
-                    for (VariableElement parameter : method.getParameters()) {
-                        methodBuilder.addParameter(
-                                ClassName.get(parameter.asType()),
-                                parameter.getSimpleName().toString()
-                        );
+                    if (!methodName.equals("bind")) {
+                        for (VariableElement parameter : method.getParameters()) {
+                            methodBuilder.addParameter(
+                                    TypeName.get(parameter.asType()),
+                                    parameter.getSimpleName().toString()
+                            );
+                        }
+                    } else {
+                        methodBuilder.addParameter(DUTBindingTool.getTypeNameFromTypeElement(fieldType),
+                                method.getParameters().get(0).getSimpleName().toString());
                     }
 
                     // 构造方法体
@@ -187,7 +191,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
 //                        methodBody.append("this." + clkManagerName + ".shutdown();\n").append("this." + instanceFieldName + ".Finish();\n");
                     } else if (methodName.equals("reset")) {
                         clsBuilder.buildReset(methodBuilder);
-                    } else {
+                    } else if (methodName.equals("bind")) {
+                        clsBuilder.buildBind(methodBuilder, method);
+                    }else {
                         methodBuilder.addCode("System.out.println(\"Calling method: " + methodName + "\");\n");
                         if (!returnType.toString().equals("void")) {
                             methodBuilder.addCode("return null; // Replace with actual implementation\n");

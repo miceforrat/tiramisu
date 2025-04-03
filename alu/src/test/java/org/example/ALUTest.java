@@ -1,98 +1,105 @@
 package org.example;
 import com.ut.UT_ALU;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.xaspect.testSupports.CoverageGroup;
+import org.xaspect.testSupports.CoverageManager;
+import org.xaspect.testSupports.WatchPoint;
 //import org.xaspect.executors.HWTaskExecutor;
 
 
-import static org.junit.Assert.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 
 public class ALUTest {
     
-    private int limit = 0xFF;
+    private final int limit = 0xFF;
 
 //    @AutoDUT
+//    ALUWrapper alu = new ALUWrapper();
     ALUWrapper alu;
+
+    static CoverageManager coverageManager;
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        coverageManager = CoverageManager.getCoverageManager("ALU");
+    }
 
     @Before
     public void setUp() throws Exception {
-        this.alu = new ALUWrapper();
+        alu = new ALUWrapper();
+
+        CoverageGroup testingCoverage = new CoverageGroup("testing");
+
+        Map<String, Function<UT_ALU, Boolean>> coverageMap = new HashMap<>();
+
+        for (int i =0 ; i< 16; i++){
+            int finalI = i;
+            coverageMap.put(String.format("Sel%d", i), utAlu -> utAlu.alu_sel.U().intValue() == finalI);
+        }
+
+        testingCoverage.addWatchPoint(new WatchPoint<>("32", coverageMap, alu.alu));
+//        coverageManager.addCoverageGroupForSingleClock(testingCoverage, alu.cm);
+//        coverageManager = CoverageManager.getCoverageManager(alu.cm);
     }
 
     @After
     public void tearDown() throws Exception {
         this.alu.clear();
+//        this.coverageManager.printReport();
     }
 
-    @Test
-    public void testAdd() {
-//        HWTaskExecutor executor = new HWTaskExecutor();
-//        executor.bindClock(alu.aluTestWrapper.getXClock());
+    @AfterClass
+    public static void tearDownAfterClass() throws Exception {
+//        coverageManager.printReport();
+    }
+
+//    @Test
+//    public void testAdd() {
 //
-//        for (int a = 0; a < 256; a++) {
-//            for (int b = 0; b < 256; b++) {
-//                int finalA = a;
-//                int finalB = b;
-//                executor.submit(executor.taskBuilder()
-//                        .adds(()->{
-//                            ALUIO in = new ALUIO();
-//                            in.ab.a = finalA;
-//                            in.ab.b = finalB;
-//                            in.sel.sel = 0;
-//                            alu.aluTestWrapper.postIn(in);
-//                        })
-//                        .step().adds(()->{
-//                            assertEquals((finalA+finalB) & limit, alu.aluTestWrapper.getOut());
-//                        })
-//                );
-//                executor.execute();
+//        ALUIO in = new ALUIO();
+//        for (int a = 0; a < 256; a++){
+//            for (int b = 0; b < 256; b++){
+//                in.a = a;
+//                in.b = b;
+//                in.sel = 0;
+//                assertEquals((a+b) & limit, alu.process(in));
 //            }
 //        }
-
-        ALUIO in = new ALUIO();
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-                in.ab.a = a;
-                in.ab.b = b;
-                in.sel.sel = 0;
-                assertEquals((a+b) & limit, alu.process(in));
-            }
-        }
-
-    }
-
-    @Test
-    public void testAll(){
-        ALUIO in = new ALUIO();
-
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-                for (int c = 0; c < 16; c++){
-                    in.ab.a = a;
-                    in.ab.b = b;
-                    in.sel.sel  = c;
-//                    assertEquals(refModel(in.ab.a, in.ab.b, in.sel.sel),
-                        alu.process(in);
-//                    );
-                }
-            }
-        }
-//        assertEquals(0, 1);
-    }
 //
+//    }
+//
+//    @Test
+//    public void testAll(){
+//        ALUIO in = new ALUIO();
+//
+//        for (int a = 0; a < 256; a++){
+//            for (int b = 0; b < 256; b++){
+//                for (int c = 0; c < 16; c++){
+//                    in.a = a;
+//                    in.b = b;
+//                    in.sel  = c;
+//                    assertEquals(refModel(in.a, in.b, in.sel),
+//                        alu.process(in)
+//                    );
+//                }
+//            }
+//        }
+////        assertEquals(0, 1);
+//    }
+////
     @Test
     public void randTest(){
         Random random = new Random();
         random.setSeed(System.currentTimeMillis());
         ALUIO in = new ALUIO();
-        for (int i = 0 ; i < 100000; i++){
-            in.ab.a = random.nextInt( 256);
-            in.ab.b = random.nextInt( 256);
-            in.sel.sel  = random.nextInt( 16);
+        for (int i = 0 ; i < 10000000; i++){
+            in.a = random.nextInt( 256);
+            in.b = random.nextInt( 256);
+            in.sel  = random.nextInt( 16);
             alu.process(in);
 
         }

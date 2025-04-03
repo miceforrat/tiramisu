@@ -84,8 +84,8 @@
                 <configuration>
                     <skipTests>false</skipTests>
 <!--                    <testFailureIgnore>true</testFailureIgnore>-->
-                    <parallel>methods</parallel>
-                    <useUnlimitedThreads>true</useUnlimitedThreads>
+<!--                    <parallel>methods</parallel>-->
+<!--                    <useUnlimitedThreads>true</useUnlimitedThreads>-->
 <!--                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>-->
                 </configuration>
             </plugin>

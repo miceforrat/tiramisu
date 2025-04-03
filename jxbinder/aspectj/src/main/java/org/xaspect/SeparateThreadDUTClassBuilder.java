@@ -62,128 +62,133 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
     }
 
     @Override
-    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUT dutInfo) {
-        String dutId = dutInfo.id();
+    public void buildBind(MethodSpec.Builder methodBuilder, ExecutableElement method) {
 
-        TypeName typeName = DUTBindingTool.getTypeNameFromTypeElement(typeElement);
-        this.instanceFieldName = typeName.toString().replace(".", "") + "Instance" + dutId;
-        FieldSpec dutField = FieldSpec.builder(typeName, instanceFieldName, Modifier.PRIVATE)
-                .build();
-        implClassBuilder.addField(dutField);
+    }
 
+    @Override
+    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUTDao dutInfo) {
+//        String dutId = dutInfo.id();
 
-        int waitersCnt = dutInfo.waiterCnt();
-        FieldSpec waiterCntField = FieldSpec.builder(TypeName.INT, WAITER_CNT_VAR_NAME, Modifier.PRIVATE)
-                .initializer(String.valueOf(waitersCnt))
-                .build();
-        implClassBuilder.addField(waiterCntField);
-
-
-        FieldSpec waiterOnStepField = FieldSpec.builder(TypeName.INT, WAIT_ON_STEPS, Modifier.PRIVATE)
-                .initializer("0")
-                .build();
-        implClassBuilder.addField(waiterOnStepField);
-
-        FieldSpec runningStatus = FieldSpec.builder(TypeName.BOOLEAN, RUNNING_STATUS_VAR_NAME, Modifier.PRIVATE)
-                .initializer("true")
-                .build();
-        implClassBuilder.addField(runningStatus);
-
-        ParameterizedTypeName blockingQueueOfDUTReq = ParameterizedTypeName.get(
-                ClassName.get(BlockingQueue.class),
-                ClassName.get(DUTReq.class)
-        );
-
-        FieldSpec reqBlockingQueue = FieldSpec.builder(blockingQueueOfDUTReq, REQ_BLOCKING_QUEUE_VAR_NAME, Modifier.PRIVATE)
-                .initializer("new $T<>()", LinkedBlockingQueue.class)
-                .build();
-        implClassBuilder.addField(reqBlockingQueue);
-
-        ParameterizedTypeName INTMapOfSemaphore = ParameterizedTypeName.get(
-                ClassName.get(Map.class),
-                ClassName.get(Integer.class),
-                ClassName.get(Semaphore.class)
-        );
-
-        FieldSpec semMap = FieldSpec.builder(INTMapOfSemaphore, SEMAPHORE_MAP_VAR_NAME, Modifier.PRIVATE)
-                .initializer("new $T<>()", HashMap.class)
-                .build();
-        implClassBuilder.addField(semMap);
-
-        ParameterizedTypeName INTMapOfDUTConsumer = ParameterizedTypeName.get(
-                ClassName.get(Map.class),
-                ClassName.get(Integer.class),
-                ClassName.get(DUTConsumer.class)
-        );
-
-        FieldSpec consumerMap = FieldSpec.builder(INTMapOfDUTConsumer, CONSUMER_MAP_VAR_NAME, Modifier.PRIVATE)
-                .initializer("new $T<>()", HashMap.class)
-                .build();
-        implClassBuilder.addField(consumerMap);
-
-        ParameterizedTypeName StringMapOfObj= ParameterizedTypeName.get(
-                ClassName.get(Map.class),
-                ClassName.get(String.class),
-                ClassName.get(Object.class)
-        );
-
-        FieldSpec outValMap = FieldSpec.builder(StringMapOfObj, OUT_VALUE_BUNDLES, Modifier.PRIVATE)
-                .initializer("new $T<>()", HashMap.class)
-                .build();
-        implClassBuilder.addField(outValMap);
-
-        String initializeClockStr = "";
-
-        String clockName = dutInfo.value() + dutInfo.clockName();
-        if (!clockName.isEmpty()){
-            initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
-        }
-
-        resetPinName = dutInfo.value() + dutInfo.resetName();
-        String resetStmt = "";
-        if (!resetPinName.isEmpty()){
-            resetStmt = "this." + instanceFieldName + "." + resetPinName+".Set(1);\n";
-        }
-
-        String fstSetStmt = "";
-        String fstFileName = dutInfo.waveFileName();
-        if (!fstFileName.isEmpty()){
-            fstSetStmt = "this." + instanceFieldName + ".SetWaveform(\"" + fstFileName + "\");\n";
-        }
-
-        String covSetStmt = "";
-        String covFileName = dutInfo.covFileName();
-        if (!covFileName.isEmpty()){
-            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
-        }
-
-
-        implClassBuilder.addMethod(MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
-                .addCode("$N.put(1, new $T(0));\n", SEMAPHORE_MAP_VAR_NAME, Semaphore.class)
-                .addCode("$N.put(1, req -> {\n" +
-                        "$N += 1;\n" +
-                        "if ($N >= WAITERS) {" +
-                        "   $N.Step();\n" +
-                        "   this.AfterStep();\n" +
-                        "   $N.get(1).release(WAITERS);\n}\n" +
-                        "});\n", CONSUMER_MAP_VAR_NAME,  WAIT_ON_STEPS, WAIT_ON_STEPS, instanceFieldName, SEMAPHORE_MAP_VAR_NAME)
-                .addCode("$N.put(0, req -> {\n" +
-                        "\n" +
-                        "}\n);", CONSUMER_MAP_VAR_NAME)
-                .addCode("Thread aluThread = new Thread(() -> {\n" +
-                        "     $N = new $T();\n" + initializeClockStr + resetStmt + fstSetStmt + covSetStmt +
-                        "     while (running) {\n" +
-                        "         try {\n" +
-                        "             $T<?> req = reqs.take();\n" +
-                        "             $N.get(req.event).dealWithReq(req);\n" +
-                        "         } catch (InterruptedException  e) {\n" +
-                        "              e.printStackTrace();\n" +
-                        "         }\n" +
-                        "     }\n" +
-                        "     $N.Finish();\n" +
-                        " });\n" +
-                        " aluThread.start();", instanceFieldName, typeName, DUTReq.class, CONSUMER_MAP_VAR_NAME, instanceFieldName).build());
+//        TypeName typeName = DUTBindingTool.getTypeNameFromTypeElement(typeElement);
+//        this.instanceFieldName = typeName.toString().replace(".", "") + "Instance";
+//        FieldSpec dutField = FieldSpec.builder(typeName, instanceFieldName, Modifier.PRIVATE)
+//                .build();
+//        implClassBuilder.addField(dutField);
+//
+//
+//        int waitersCnt = 1;
+//        FieldSpec waiterCntField = FieldSpec.builder(TypeName.INT, WAITER_CNT_VAR_NAME, Modifier.PRIVATE)
+//                .initializer(String.valueOf(waitersCnt))
+//                .build();
+//        implClassBuilder.addField(waiterCntField);
+//
+//
+//        FieldSpec waiterOnStepField = FieldSpec.builder(TypeName.INT, WAIT_ON_STEPS, Modifier.PRIVATE)
+//                .initializer("0")
+//                .build();
+//        implClassBuilder.addField(waiterOnStepField);
+//
+//        FieldSpec runningStatus = FieldSpec.builder(TypeName.BOOLEAN, RUNNING_STATUS_VAR_NAME, Modifier.PRIVATE)
+//                .initializer("true")
+//                .build();
+//        implClassBuilder.addField(runningStatus);
+//
+//        ParameterizedTypeName blockingQueueOfDUTReq = ParameterizedTypeName.get(
+//                ClassName.get(BlockingQueue.class),
+//                ClassName.get(DUTReq.class)
+//        );
+//
+//        FieldSpec reqBlockingQueue = FieldSpec.builder(blockingQueueOfDUTReq, REQ_BLOCKING_QUEUE_VAR_NAME, Modifier.PRIVATE)
+//                .initializer("new $T<>()", LinkedBlockingQueue.class)
+//                .build();
+//        implClassBuilder.addField(reqBlockingQueue);
+//
+//        ParameterizedTypeName INTMapOfSemaphore = ParameterizedTypeName.get(
+//                ClassName.get(Map.class),
+//                ClassName.get(Integer.class),
+//                ClassName.get(Semaphore.class)
+//        );
+//
+//        FieldSpec semMap = FieldSpec.builder(INTMapOfSemaphore, SEMAPHORE_MAP_VAR_NAME, Modifier.PRIVATE)
+//                .initializer("new $T<>()", HashMap.class)
+//                .build();
+//        implClassBuilder.addField(semMap);
+//
+//        ParameterizedTypeName INTMapOfDUTConsumer = ParameterizedTypeName.get(
+//                ClassName.get(Map.class),
+//                ClassName.get(Integer.class),
+//                ClassName.get(DUTConsumer.class)
+//        );
+//
+//        FieldSpec consumerMap = FieldSpec.builder(INTMapOfDUTConsumer, CONSUMER_MAP_VAR_NAME, Modifier.PRIVATE)
+//                .initializer("new $T<>()", HashMap.class)
+//                .build();
+//        implClassBuilder.addField(consumerMap);
+//
+//        ParameterizedTypeName StringMapOfObj= ParameterizedTypeName.get(
+//                ClassName.get(Map.class),
+//                ClassName.get(String.class),
+//                ClassName.get(Object.class)
+//        );
+//
+//        FieldSpec outValMap = FieldSpec.builder(StringMapOfObj, OUT_VALUE_BUNDLES, Modifier.PRIVATE)
+//                .initializer("new $T<>()", HashMap.class)
+//                .build();
+//        implClassBuilder.addField(outValMap);
+//
+//        String initializeClockStr = "";
+//
+//        String clockName = dutInfo.value() + dutInfo.clockName();
+//        if (!clockName.isEmpty()){
+//            initializeClockStr = "this." + instanceFieldName + ".InitClock(\"" + clockName + "\");";
+//        }
+//
+//        resetPinName = dutInfo.value() + dutInfo.resetName();
+//        String resetStmt = "";
+//        if (!resetPinName.isEmpty()){
+//            resetStmt = "this." + instanceFieldName + "." + resetPinName+".Set(1);\n";
+//        }
+//
+//        String fstSetStmt = "";
+//        String fstFileName = dutInfo.waveFileName();
+//        if (!fstFileName.isEmpty()){
+//            fstSetStmt = "this." + instanceFieldName + ".SetWaveform(\"" + fstFileName + "\");\n";
+//        }
+//
+//        String covSetStmt = "";
+//        String covFileName = dutInfo.covFileName();
+//        if (!covFileName.isEmpty()){
+//            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
+//        }
+//
+//
+//        implClassBuilder.addMethod(MethodSpec.constructorBuilder()
+//                .addModifiers(Modifier.PUBLIC)
+//                .addCode("$N.put(1, new $T(0));\n", SEMAPHORE_MAP_VAR_NAME, Semaphore.class)
+//                .addCode("$N.put(1, req -> {\n" +
+//                        "$N += 1;\n" +
+//                        "if ($N >= WAITERS) {" +
+//                        "   $N.Step();\n" +
+//                        "   this.AfterStep();\n" +
+//                        "   $N.get(1).release(WAITERS);\n}\n" +
+//                        "});\n", CONSUMER_MAP_VAR_NAME,  WAIT_ON_STEPS, WAIT_ON_STEPS, instanceFieldName, SEMAPHORE_MAP_VAR_NAME)
+//                .addCode("$N.put(0, req -> {\n" +
+//                        "\n" +
+//                        "}\n);", CONSUMER_MAP_VAR_NAME)
+//                .addCode("Thread aluThread = new Thread(() -> {\n" +
+//                        "     $N = new $T();\n" + initializeClockStr + resetStmt + fstSetStmt + covSetStmt +
+//                        "     while (running) {\n" +
+//                        "         try {\n" +
+//                        "             $T<?> req = reqs.take();\n" +
+//                        "             $N.get(req.event).dealWithReq(req);\n" +
+//                        "         } catch (InterruptedException  e) {\n" +
+//                        "              e.printStackTrace();\n" +
+//                        "         }\n" +
+//                        "     }\n" +
+//                        "     $N.Finish();\n" +
+//                        " });\n" +
+//                        " aluThread.start();", instanceFieldName, typeName, DUTReq.class, CONSUMER_MAP_VAR_NAME, instanceFieldName).build());
     }
 
 
