@@ -11,9 +11,8 @@ public class CoverageManager {
 
     private static final Map<String, CoverageManager> coverageManagers = new HashMap<>();
 
-    private final Set<String> resultKeys = new HashSet<>();
+    private final Map<String, CoverageGroup> coverageGroupMap = new HashMap<>();
 
-    private final Map<XClockManager, List<CoverageGroup>> coverageGroupsByClock = new HashMap<>();
 
     private CoverageManager() {
 
@@ -24,19 +23,6 @@ public class CoverageManager {
             coverageManagers.put(coverageManagerName, new CoverageManager());
         }
         return coverageManagers.get(coverageManagerName);
-    }
-
-    public void addCoverageGroupForSingleClock(CoverageGroup coverageGroup, XClockManager cm) {
-        resultKeys.add(coverageGroup.getGroupName());
-        if (!coverageGroupsByClock.containsKey(cm)) {
-            coverageGroupsByClock.put(cm, new ArrayList<>());
-        }
-        coverageGroupsByClock.get(cm).add(coverageGroup);
-        cm.stepRis(aLong -> {
-            for (CoverageGroup group : coverageGroupsByClock.get(cm)) {
-                group.watch();
-            }
-        });
     }
 
 //    public void addHangingWatchPoint(WatchPoint<?> watchPoint) {
@@ -52,8 +38,8 @@ public class CoverageManager {
 //    }
 
     public void printReport(){
-        for (String groupName : resultKeys) {
-            System.out.println(CoverageGroup.report(groupName));
+        for (CoverageGroup coverageGroup: coverageGroupMap.values()) {
+            System.out.println(coverageGroup.report());
         }
     }
 }

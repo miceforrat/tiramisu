@@ -1,65 +1,101 @@
 package org.xaspect.testSupports;
 
+import org.checkerframework.checker.units.qual.C;
+import org.xaspect.services.XClockManager;
+
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class CoverageGroup {
-    private Map<String, WatchPoint<?>> watchPoints = new HashMap<>();
+//    private Map<String, WatchPoint<?>> watchPoints = new HashMap<>();
 
-    private final static Map<String, Set<String>> watcherKeys = new HashMap<>();
+//    private final static Map<String, Set<String>> watcherKeys = new HashMap<>();
 
     private final String groupName;
 
+    private final Map<String, Map<String, Integer>> watchRecords = new HashMap<>();
+
+    private final Map<XClockManager, List<WatchPoint<?>>> clockWithPoints = new HashMap<>();
+
     public CoverageGroup(String groupName) {
 
-        if (groupName == null || groupName.isEmpty()) {
-            throw new IllegalArgumentException("groupName cannot be null or empty");
-        }
+//        if (groupName == null || groupName.isEmpty()) {
+//            throw new IllegalArgumentException("groupName cannot be null or empty");
+//        }
         this.groupName = groupName;
-        if (!watcherKeys.containsKey(groupName)) {
-            watcherKeys.put(groupName, new HashSet<>());
+//        if (!watcherKeys.containsKey(groupName)) {
+//            watcherKeys.put(groupName, new HashSet<>());
+//        }
+
+    }
+
+    public <T> WatchPoint<T> createWatchPoint(String name, Map<String, Function<T, Boolean>> bins, T target) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("name cannot be null or empty");
         }
 
+        if (!watchRecords.containsKey(name)) {
+            watchRecords.put(name, new HashMap<>());
+        }
+
+        bins.keySet().forEach(key -> watchRecords.get(name).putIfAbsent(key, 0));
+        return new WatchPoint<>(name, bins, target);
+    }
+
+    public <T> WatchPoint<T> createWatchPointWithClock(String name, Map<String, Function<T, Boolean>> bins, T target, XClockManager clockManager) {
+        WatchPoint<T> watchPoint = createWatchPoint(name, bins, target);
+        bindWithClock(clockManager, watchPoint);
+        return watchPoint;
+    }
+
+    public void bindWithClock(XClockManager clockManager, WatchPoint<?> watchPoint) {
+        if (!clockWithPoints.containsKey(clockManager)) {
+            clockWithPoints.put(clockManager, new ArrayList<>());
+            clockManager.stepRis(aLong -> {
+                for (WatchPoint<?> watchPoint1 : clockWithPoints.get(clockManager)) {
+                    watchPoint1.watch();
+                }
+            });
+        }
+        clockWithPoints.get(clockManager).add(watchPoint);
     }
 
     String getGroupName() {
         return groupName;
     }
 
-    public void addWatchPoint(WatchPoint<?> watchPoint) {
-        if (watchPoint == null) {
-            throw new IllegalArgumentException("watchPoint cannot be null");
-        }
+//    public void addWatchPoint(WatchPoint<?> watchPoint) {
+//        if (watchPoint == null) {
+//            throw new IllegalArgumentException("watchPoint cannot be null");
+//        }
+//
+//        //避免重复添加
+//        if (watchPoints.containsKey(watchPoint.getName())) {
+//            return;
+//        }
+//        watcherKeys.get(groupName).add(watchPoint.getName());
+//        watchPoints.put(watchPoint.getName(), watchPoint);
+//    }
+//
+//    Map<String, WatchPoint<?>> getWatchPoints() {
+//        return watchPoints;
+//    }
 
-        //避免重复添加
-        if (watchPoints.containsKey(watchPoint.getName())) {
-            return;
-        }
-        watcherKeys.get(groupName).add(watchPoint.getName());
-        watchPoints.put(watchPoint.getName(), watchPoint);
-    }
+//    void watch(){
+//        for (WatchPoint<?> watchPoint : watchPoints.values()) {
+//            watchPoint.watch();
+//        }
+//    }
 
-    Map<String, WatchPoint<?>> getWatchPoints() {
-        return watchPoints;
-    }
-
-    void watch(){
-        for (WatchPoint<?> watchPoint : watchPoints.values()) {
-            watchPoint.watch();
-        }
-    }
-
-    static String report(String groupName){
+    String report(){
         StringBuilder sb = new StringBuilder();
-        if (groupName == null || groupName.isEmpty()) {
-            throw new IllegalArgumentException("groupName cannot be null or empty");
+
+        for (Map.Entry<String, Map<String, Integer>> watchRecord : watchRecords.entrySet()) {
+            sb.append(watchRecord.getKey()).append("\n");
+            sb.append(watchRecord.getValue()).append("\n");
         }
-        if (!watcherKeys.containsKey(groupName)) {
-            throw new IllegalArgumentException("groupName does not exist");
-        }
-        sb.append(String.format("%s: \n", groupName));
-        for (String watchPointName : watcherKeys.get(groupName)) {
-            sb.append(WatchPoint.report(watchPointName));
-        }
+
         return sb.toString();
     }
 
