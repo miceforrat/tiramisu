@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.aspectj.lang.reflect.MethodSignature;
 import org.xaspect.datas.Pin;
+import org.xaspect.testSupports.RefRepository;
+import org.xaspect.testSupports.RefWithStaticMethod;
 
 
 @Aspect
@@ -24,7 +26,7 @@ public class FieldInitializerAspect {
     @Pointcut("execution(*..*.new(..)) && target(obj) && !@target(org.xaspect.AspectIgnore) && !within(org.xaspect..*)")
     public void constructorCall(Object obj) {}
 
-    // 在构造方法调用后执行初始化逻辑
+    // 在构造方法调用前执行初始化逻辑
     @Before("constructorCall(obj)")
     public void initializeFields(Object obj) {
         Class<?> clazz = obj.getClass();
@@ -46,6 +48,16 @@ public class FieldInitializerAspect {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+        }
+
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(RefWithStaticMethod.class)) {
+                System.out.println("@RefWithStaticMethod method found: " + method.getName());
+                RefWithStaticMethod refWithStaticMethod = method.getAnnotation(RefWithStaticMethod.class);
+                String staticMethodId = refWithStaticMethod.methodId();
+                method.setAccessible(true);
+                RefRepository.getInstance().registerStaticRefMethod(staticMethodId, method);
             }
         }
     }
