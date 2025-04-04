@@ -1,6 +1,7 @@
 package org.xaspect;
 
 
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 
@@ -28,7 +29,7 @@ public class FieldInitializerAspect {
 
     // 在构造方法调用前执行初始化逻辑
     @Before("constructorCall(obj)")
-    public void initializeFields(Object obj) {
+    public void initializeFields(JoinPoint jp, Object obj) {
         Class<?> clazz = obj.getClass();
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {

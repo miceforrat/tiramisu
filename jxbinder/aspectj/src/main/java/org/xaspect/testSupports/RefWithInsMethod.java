@@ -8,6 +8,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface RefWithInsMethod {
-    String modelId() default "";
+    Class<?> refClass() default Object.class;
     String methodId() default "";
 }
