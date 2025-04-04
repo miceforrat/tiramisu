@@ -1,9 +1,7 @@
 package org.xaspect.testSupports;
 
-import org.xaspect.services.XClockManager;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class CoverageManager {
 

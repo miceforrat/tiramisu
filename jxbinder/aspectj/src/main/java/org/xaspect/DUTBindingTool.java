@@ -21,23 +21,7 @@ import java.util.Map;
 
 class DUTBindingTool {
 
-    private static List<String> watchpointsStmts = new ArrayList<>();
-
-    static List<String> getWatchpointsStmts() {
-        return watchpointsStmts;
-    }
-
-    static String WATCHPOINT_MAP_NAME = "watchpointMap";
-
     static ProcessingEnvironment processingEnv;
-
-    static ParameterizedTypeName getWatchPointTypeName(){
-        return ParameterizedTypeName.get(
-                ClassName.get(Map.class),
-                ClassName.get(String.class),
-                ClassName.get(Integer.class)
-        );
-    }
 
     static List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName, String outerName){
         String outputPrefix = prefix;
@@ -116,11 +100,6 @@ class DUTBindingTool {
             dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
             System.err.println("is Method!");
             dataClass = getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
-            Annotation wp = getAnnotationFromType(((ExecutableElement) element).getReturnType(), WatchPoint.class);
-            if (wp != null) {
-//                WatchPoint watchPoint = (WatchPoint) wp;
-                laterChecks = checkWatchPoints(IOName, ((WatchPoint) wp).conditionClassNames(), ((WatchPoint) wp).conditionMethodNames(), ((WatchPoint) wp).conditionNames());
-            }
         } else {
             dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
             dataClass = getClassFromTypeMirror(element.asType());
@@ -280,13 +259,6 @@ class DUTBindingTool {
         }
         if (conditionClasses.length != names.length || conditionMethods.length != names.length){
             throw new IllegalArgumentException("Number of conditions does not match number of ids");
-        }
-        for (int i = 0; i < conditionClasses.length; i++){
-            String checkStmt = WATCHPOINT_MAP_NAME + ".put(\""+  names[i] +"\", "+  WATCHPOINT_MAP_NAME + ".getOrDefault(\"" + names[i] + "\", 0) + ("
-                    + conditionClasses[i] +"." + conditionMethods[i] + "(" + watchedVarName+") ? 1 : 0));\n";
-//            watchpointsStmts.add(checkStmt);
-            rets.add(checkStmt);
-//            System.err.println(checkStmt);
         }
         return rets;
     }
