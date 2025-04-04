@@ -39,20 +39,30 @@ public class XClockManager {
         useClockCnt++;
     }
 
+    public void unregister(){
+        cntLock.acquireUninterruptibly();
+        clockWaiters -= 1;
+        check(0);
+    }
+
+    void check(int stay){
+        if (clockWaiters >= useClockCnt){
+            waitClock.release(clockWaiters-stay);
+            clockWaiters = 0;
+            cntLock.release();
+        } else {
+            cntLock.release();
+            waitClock.acquireUninterruptibly();
+        }
+    }
+
     public void Step(){
         if (useClockCnt <= 1){
             clock.Step();
         } else {
             cntLock.acquireUninterruptibly();
             clockWaiters += 1;
-            if (clockWaiters >= useClockCnt){
-                waitClock.release(clockWaiters-1);
-                clockWaiters = 0;
-                cntLock.release();
-            } else {
-                cntLock.release();
-                waitClock.acquireUninterruptibly();
-            }
+            check(1);
         }
     }
     
