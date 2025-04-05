@@ -18,7 +18,7 @@ public class CoverageGroup {
 
     private final Map<XClockManager, List<WatchPoint<?>>> clockWithPoints = new HashMap<>();
 
-    public CoverageGroup(String groupName) {
+    CoverageGroup(String groupName) {
 
 //        if (groupName == null || groupName.isEmpty()) {
 //            throw new IllegalArgumentException("groupName cannot be null or empty");
@@ -54,7 +54,13 @@ public class CoverageGroup {
             clockWithPoints.put(clockManager, new ArrayList<>());
             clockManager.stepRis(aLong -> {
                 for (WatchPoint<?> watchPoint1 : clockWithPoints.get(clockManager)) {
-                    watchPoint1.watch();
+                    Map<String, Boolean> binRes = watchPoint1.watch();
+                    Map<String, Integer> thisRecord = watchRecords.get(watchPoint1.getName());
+                    assert thisRecord != null;
+                    for (Map.Entry<String, Boolean> binEntry : binRes.entrySet()) {
+                        int newCount = thisRecord.get(binEntry.getKey()) + (binEntry.getValue() ? 1 : 0);
+                        thisRecord.put(binEntry.getKey(), newCount);
+                    }
                 }
             });
         }

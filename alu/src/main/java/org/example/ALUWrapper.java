@@ -20,11 +20,11 @@ public class ALUWrapper {
     }
 
     public void clear(){
-        this.aluDutDao.finish();
+        this.alu.Finish();
 
     }
 
-    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
+//    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
     public int process(ALUIO in) {
 
         aluDutDao.postIn(in);

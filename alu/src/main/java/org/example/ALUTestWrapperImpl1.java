@@ -13,10 +13,10 @@ public class ALUTestWrapperImpl1 implements ALUDutDao {
 
     private final int WAITERS = 1;
 
-    @Override
-    public void reset() {
-
-    }
+//    @Override
+//    public void reset() {
+//
+//    }
 
     private boolean running = true;
 
@@ -152,11 +152,11 @@ public class ALUTestWrapperImpl1 implements ALUDutDao {
 //        }
 //    }
 
-    @Override
-    public void finish() {
-        this.running = false;
-        this.reqs.add(new DUTReq(DUTEvent.NOTHING));
-    }
+//    @Override
+//    public void finish() {
+//        this.running = false;
+//        this.reqs.add(new DUTReq(DUTEvent.NOTHING));
+//    }
 
     private enum DUTEvent{
         NOTHING, STEP, POST_IN, OUT

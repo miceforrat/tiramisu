@@ -23,6 +23,13 @@ public class CoverageManager {
         return coverageManagers.get(coverageManagerName);
     }
 
+    public CoverageGroup getCoverageGroup(String coverageGroupName) {
+        if (!coverageGroupMap.containsKey(coverageGroupName)) {
+            coverageGroupMap.put(coverageGroupName, new CoverageGroup(coverageGroupName));
+        }
+        return coverageGroupMap.get(coverageGroupName);
+    }
+
 //    public void addHangingWatchPoint(WatchPoint<?> watchPoint) {
 //        this.coverageGroups.get(CoverageGroup.PRESERVED_HANGING).addWatchPoint(watchPoint);
 //    }

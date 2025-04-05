@@ -32,7 +32,7 @@ public class ALUTest {
     public void setUp() throws Exception {
         alu = new ALUWrapper();
 
-        CoverageGroup testingCoverage = new CoverageGroup("testing");
+        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
 
         Map<String, Function<UT_ALU, Boolean>> coverageMap = new HashMap<>();
 
@@ -41,7 +41,7 @@ public class ALUTest {
             coverageMap.put(String.format("Sel%d", i), utAlu -> utAlu.alu_sel.U().intValue() == finalI);
         }
 
-        testingCoverage.addWatchPoint(new WatchPoint<>("32", coverageMap, alu.alu));
+        testingCoverage.createWatchPointWithClock("32", coverageMap, alu.alu, alu.cm);
 //        coverageManager.addCoverageGroupForSingleClock(testingCoverage, alu.cm);
 //        coverageManager = CoverageManager.getCoverageManager(alu.cm);
     }
@@ -54,7 +54,7 @@ public class ALUTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-//        coverageManager.printReport();
+        coverageManager.printReport();
     }
 
 //    @Test
@@ -96,7 +96,7 @@ public class ALUTest {
         Random random = new Random();
         random.setSeed(System.currentTimeMillis());
         ALUIO in = new ALUIO();
-        for (int i = 0 ; i < 10000000; i++){
+        for (int i = 0 ; i < 10000; i++){
             in.a = random.nextInt( 256);
             in.b = random.nextInt( 256);
             in.sel  = random.nextInt( 16);

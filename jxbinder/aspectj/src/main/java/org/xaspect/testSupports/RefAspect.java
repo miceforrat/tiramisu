@@ -21,21 +21,15 @@ public class RefAspect {
         String refId = refWithStaticMethod.methodId();
         Method method = RefRepository.getInstance().getStaticMethod(refId);
         if (method != null) {
-            Class<?>[] methodParameterTypes = method.getParameterTypes();
-            Object[] args = pjp.getArgs();
-
-            if (args.length != methodParameterTypes.length) {
-                System.err.println("Not enough parameters for " + refId);
-            }
+            Class<?>[] refParameterTypes = method.getParameterTypes();
 
             MethodSignature methodSignature = (MethodSignature) pjp.getSignature();
-            Class<?>[] paramTypes = methodSignature.getParameterTypes();
-            for (int i = 0; i < paramTypes.length; i++) {
-               if (!paramTypes[i].equals(methodParameterTypes[i])) {
-                   throw new RuntimeException("Wrong parameter type for " + refId + ": expected: " + methodParameterTypes[i].getName() + ", got: " + methodParameterTypes[i].getName()
-                           + "actual: " + paramTypes[i].getName());
-               }
-            }
+            Class<?>[] realParamTypes = methodSignature.getParameterTypes();
+
+            checkArgs(refParameterTypes, realParamTypes, refId);
+            Object[] args = pjp.getArgs();
+
+
             Future<Object> refFuture = InnerThreadPool.submit(new Callable<Object>() {
                 @Override
                 public Object call() throws Exception {
@@ -49,8 +43,51 @@ public class RefAspect {
             }
             return result;
         } else {
-            RefRepository.getInstance().logNonExistenceStaticMethod(refId);
             return pjp.proceed();
+        }
+    }
+
+
+    @Around("@annotation(refWithInsMethod)")
+    public Object around(ProceedingJoinPoint pjp, RefWithInsMethod refWithInsMethod) throws Throwable {
+        String refId = refWithInsMethod.methodId();
+        String modelId = refWithInsMethod.modelId();
+        RefRepository.InstanceWithMethod insWithMethod = RefRepository.getInstance().getInstanceWithMethod(modelId, refId);
+        if (insWithMethod != null && insWithMethod.method != null && insWithMethod.instance != null) {
+            Class<?>[] refParameterTypes = insWithMethod.method.getParameterTypes();
+            MethodSignature methodSignature = (MethodSignature) pjp.getSignature();
+            Class<?>[] realParamTypes = methodSignature.getParameterTypes();
+
+            checkArgs(refParameterTypes, realParamTypes, "method " + refId + " in model " + modelId);
+
+            Object[] args = pjp.getArgs();
+
+            Future<Object> refFuture = InnerThreadPool.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    return insWithMethod.method.invoke(insWithMethod.instance, args);
+                }
+            });
+
+            Object result = pjp.proceed();
+            Object ref = refFuture.get();
+            if (!ref.equals(result)) {
+                throw new AssertionError("Auto Reference Method Results Assertion Failed: expected: " + ref + ", actual: " + result);
+            }
+            return result;
+        } else {
+            return pjp.proceed();
+        }
+    }
+
+    private void checkArgs(Class<?>[] refMethodParameterTypes, Class<?>[] realMethodParameterTypes, String refMethodName) {
+        if (refMethodParameterTypes.length != realMethodParameterTypes.length) {
+            throw new RuntimeException("Not enough parameters for " + refMethodName);
+        }
+        for (int i = 0; i < refMethodParameterTypes.length; i++) {
+            if (!realMethodParameterTypes[i].equals(realMethodParameterTypes[i])) {
+                throw new RuntimeException("Wrong parameter type for " + refMethodName + ": expected: " + realMethodParameterTypes[i].getName() + ", got: " + refMethodParameterTypes[i].getName());
+            }
         }
     }
 }
