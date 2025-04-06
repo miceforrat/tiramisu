@@ -10,10 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+import org.aspectj.lang.reflect.InitializerSignature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.xaspect.datas.Pin;
-import org.xaspect.testSupports.RefRepository;
-import org.xaspect.testSupports.RefWithStaticMethod;
+import org.xaspect.testSupports.*;
 
 
 @Aspect
@@ -53,12 +53,19 @@ public class FieldInitializerAspect {
         }
 
         for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(RefWithStaticMethod.class)) {
+            if (method.isAnnotationPresent(StaticRefMethod.class)) {
                 System.out.println("@RefWithStaticMethod method found: " + method.getName());
-                RefWithStaticMethod refWithStaticMethod = method.getAnnotation(RefWithStaticMethod.class);
-                String staticMethodId = refWithStaticMethod.methodId();
+                StaticRefMethod staticRefMethod = method.getAnnotation(StaticRefMethod.class);
+                String staticMethodId = staticRefMethod.id();
                 method.setAccessible(true);
                 RefRepository.getInstance().registerStaticRefMethod(staticMethodId, method);
+            } else if (method.isAnnotationPresent(InsRefMethod.class)){
+                System.out.println("@RefWithInsMethod found: " + method.getName());
+                InsRefMethod insRefMethod = method.getAnnotation(InsRefMethod.class);
+//                String modelId = refWithInsMethod.modelId();
+                String insMethodId = insRefMethod.id();
+                method.setAccessible(true);
+                RefRepository.getInstance().registerInstanceRefMethod(clazz, insMethodId, method);
             }
         }
     }
