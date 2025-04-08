@@ -32,6 +32,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
         filer = processingEnv.getFiler();
         elementUtils = processingEnv.getElementUtils();
         DUTBindingTool.processingEnv = processingEnv;
+        TypeParserHelper.processingEnv = processingEnv;
     }
 
     @Override
@@ -46,6 +47,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        if (processingEnv.getClass().equals(org.aspectj.org.eclipse.jdt.internal.compiler.apt.dispatch.BatchProcessingEnvImpl.class)){
+            return true;
+        }
         for (Element element : roundEnv.getElementsAnnotatedWith(AutoDUTDao.class)) {
             if (element.getKind() == ElementKind.FIELD) {
                 processField((VariableElement) element);
@@ -56,6 +60,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     private void processField(VariableElement field) {
 //        String fieldName = field.getSimpleName().toString();
+        System.err.println("processing field: " + field);
         TypeElement fieldType = elementUtils.getTypeElement(field.asType().toString());
 //        System.out.println(field.asType());
 //        TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
@@ -75,7 +80,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
             System.err.println("Class " + implClassName + " already exists, skipping.");
             return;
         }
-
+        System.out.println("processing field going on ");
         AnnotationSpec annotation = AnnotationSpec.builder(AspectIgnore.class)
                 .build();
         // 构建实现类
@@ -158,7 +163,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
                             );
                         }
                     } else {
-                        methodBuilder.addParameter(DUTBindingTool.getTypeNameFromTypeElement(fieldType),
+                        methodBuilder.addParameter(TypeName.get(DUTBindingTool.getInheritingType(fieldType, DUTDao.class)),
                                 method.getParameters().get(0).getSimpleName().toString());
                     }
 
@@ -313,10 +318,13 @@ public class AutoDUTProcessor extends AbstractProcessor {
     private boolean doesClassExist(String packageName, String className) {
         String resourcePath = packageName.replace('.', '/') + "/" + className + ".java";
         try {
-            processingEnv.getFiler().getResource(StandardLocation.SOURCE_OUTPUT, "", resourcePath);
-            return true; // 文件已存在
+            processingEnv.getFiler()
+                    .getResource(StandardLocation.SOURCE_OUTPUT, "", resourcePath)
+                    .openInputStream() // 💥 实际读取才会抛错
+                    .close(); // 确实存在时能打开关闭
+            return true;
         } catch (IOException e) {
-            return false; // 文件不存在，可以生成
+            return false;
         }
     }
 

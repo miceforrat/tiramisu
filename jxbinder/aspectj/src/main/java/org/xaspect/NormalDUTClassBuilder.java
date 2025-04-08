@@ -9,6 +9,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,8 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
 
     private String resetPinName = "";
 
+    private TypeElement instanceTypeElement;
+
     @Override
     public void buildBind(MethodSpec.Builder methodBuilder, ExecutableElement method) {
         methodBuilder.addStatement("this.$N = $N;\n", instanceFieldName, method.getParameters().get(0).getSimpleName());
@@ -28,8 +31,11 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
 
     @Override
     public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUTDao dutInfo) {
-        TypeName dutTypeName = DUTBindingTool.getTypeNameFromTypeElement(typeElement);
+        TypeMirror mirror = DUTBindingTool.getInheritingType(typeElement, DUTDao.class);
+        TypeName dutTypeName = TypeName.get(mirror);
+        System.err.println(typeElement.getClass());
         this.instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance";
+        this.instanceTypeElement = TypeParserHelper.getInstance().getTypeElementFromTypeMirror(mirror);
         FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
 //                .initializer("new $T()", dutTypeName)
                 .build();
@@ -110,7 +116,7 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     public void buildGetMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
         String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
         String outerName = "outBundle";
-        List<String> res = constructGetMethod(method, getPrefix, instanceFieldName, outerName);
+        List<String> res = constructGetMethod(method, getPrefix, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName);
         res.forEach(methodBuilder::addCode);
         methodBuilder.addCode("return " + outerName + ";\n");
     }
@@ -155,7 +161,7 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
 //            }
 //
 //            List<String> inputsAssigns = constructIO(inputPrefix, getClassFromTypeMirror(param.asType()), instanceFieldName, inputBundleName, ios);
-            ret.addAll(constructOneParamBinding(prefix, param, inputBundleName, this.instanceFieldName));
+            ret.addAll(constructOneParamBinding(prefix, param, inputBundleName, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement)));
 
         }
 //        System.out.println("to add:" + ret);

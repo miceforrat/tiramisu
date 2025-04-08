@@ -1,7 +1,6 @@
 package org.xaspect;
 
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import org.xaspect.datas.*;
 
@@ -23,7 +22,7 @@ class DUTBindingTool {
 
     static ProcessingEnvironment processingEnv;
 
-    static List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName, String outerName){
+    static List<String> constructGetMethod(ExecutableElement method, String prefix, InstanceDUTTypeInfo instanceFieldType, String outerName){
         String outputPrefix = prefix;
         List<String> ret = new ArrayList<>();
 
@@ -41,7 +40,7 @@ class DUTBindingTool {
         }
         ios.isPin = outerPinAnnotation != null;
 
-        Class<?> returnTypeCls = getClassFromTypeMirror(method.getReturnType());
+        Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
         String typeName = returnTypeCls.getTypeName();
         String initializr = typeName + " " + outerName ;
         if (!ios.isPin) {
@@ -52,7 +51,7 @@ class DUTBindingTool {
 
         // 将 TypeMirror 转换为 TypeElement
 
-        List<String> outputAssigns = constructIO(outputPrefix, method, new InstanceDUTTypeInfo(instanceFieldName, null), outerName, ios);
+        List<String> outputAssigns = constructIO(outputPrefix, method, instanceFieldType, outerName, ios);
         ret.addAll(outputAssigns);
 
 //        Annotation outerWatchPoint = getAnnotationFromType(method.getReturnType(), WatchPoint.class);
@@ -60,8 +59,13 @@ class DUTBindingTool {
         return ret;
     }
 
-    static List<String> constructOneParamBinding(String prefix, VariableElement param, String inputBundleName, String instanceFieldName) {
+    static List<String> constructOneParamBinding(String prefix, VariableElement param, String inputBundleName, InstanceDUTTypeInfo instanceField) {
         IOParameters ios = new IOParameters();
+        System.err.println("printing...");
+
+        for (String name: instanceField.getFieldNames()){
+            System.err.println(name);
+        }
         ios.isIn = true;
         String inputPrefix = prefix;
         Annotation innerPinAnnotation = getAnnotationFromType(param.asType(), Pin.class);
@@ -84,7 +88,7 @@ class DUTBindingTool {
             ios.unsigned = pinAnnotation.unsigned();
         }
 
-        return constructIO(inputPrefix, param, new InstanceDUTTypeInfo(instanceFieldName, null), inputBundleName, ios);
+        return constructIO(inputPrefix, param, instanceField, inputBundleName, ios);
     }
 
 
@@ -93,18 +97,24 @@ class DUTBindingTool {
         TypeElement dataTypeElement;
         Class<?> dataClass;
 //        String trueInsPin = "this." + insName + "." + prefix;
-        List<String> laterChecks = new ArrayList<>();
         if (element.getKind() == ElementKind.METHOD) {
-            System.err.println("is Method!");
 
             dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
-            System.err.println("is Method!");
-            dataClass = getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
+            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
         } else {
             dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
-            dataClass = getClassFromTypeMirror(element.asType());
+            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(element.asType());
 
         }
+//        TypeMirror dataClass;
+//        if (element.getKind() == ElementKind.METHOD) {
+//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
+//
+//            dataClass = ((ExecutableElement) element).getReturnType();
+//        } else {
+//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
+//            dataClass = element.asType();
+//        }
 //        System.err.println("deal with bundle annotation");
         // 处理 Bundle 注解
         if (dataTypeElement != null) {
@@ -122,22 +132,17 @@ class DUTBindingTool {
             rets.add(constructSingleAssignment(fieldPrefix, dataClass, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
         } else {
             // 如果元素是类或接口，获取其字段
-//            System.err.println("element type: " + element.getKind());
-//            if (element.getKind() == ElementKind.CLASS || element.getKind() == ElementKind.INTERFACE) {
-//                typeElement = (TypeElement) element;
+
             System.err.println("entering class");
-            for (Element enclosedElement : dataTypeElement.getEnclosedElements()) {
-                if (enclosedElement.getKind() == ElementKind.FIELD) {
-                    VariableElement field = (VariableElement) enclosedElement;
-                    processField(field, prefix, insInfo, fieldPrefix, ioParameters, rets);
-//                    System.err.println("is field: check rets: " + rets);
-                }
+            Map<String, VariableElement> allVars = TypeParserHelper.getInstance().collectAllFields(dataTypeElement);
+            for (VariableElement enclosedElement : allVars.values()) {
+                VariableElement field = enclosedElement;
+                processField(field, prefix, insInfo, fieldPrefix, ioParameters, rets);
             }
-//            }
         }
-        rets.addAll(laterChecks);
         return rets;
     }
+
 
 //    private static List<String> constructIO(String pre, Element element, InstanceDUTTypeInfo insInfo, String IOName, IOParameters ioParameters) {
 //        String prefix = pre;
@@ -244,24 +249,42 @@ class DUTBindingTool {
             IOParameters subIOS = ioParameters.copy();
             subIOS.isSon = true;
             String pinPrefix = prefix + field.getAnnotation(SubBundle.class).value();
-            System.err.println("pin prefix" + pinPrefix);
             List<String> subreses = constructIO(pinPrefix, field, insInfo, subFieldName, subIOS);
             rets.addAll(subreses);
         } else if (field.getAnnotation(ListPins.class) != null) {
             // 处理 ListPins 注解
         }
     }
-
-    private static List<String> checkWatchPoints(String watchedVarName, String[] conditionClasses, String[] conditionMethods, String[] names){
-        List<String> rets = new ArrayList<>();
-        if (conditionClasses.length == 0){
-            return rets;
+    private static boolean isInteger(TypeMirror typeMirror) {
+        if (typeMirror.getKind() == TypeKind.INT) {
+            return true;
         }
-        if (conditionClasses.length != names.length || conditionMethods.length != names.length){
-            throw new IllegalArgumentException("Number of conditions does not match number of ids");
-        }
-        return rets;
+        return typeMirror.toString().equals("java.lang.Integer");
     }
+    private static boolean isLong(TypeMirror typeMirror) {
+        if (typeMirror.getKind() == TypeKind.LONG) {
+            return true;
+        }
+        return typeMirror.toString().equals("java.lang.Long");
+    }
+
+    private static String getBasicTypeValStr(TypeMirror typeMirror) {
+        if (isInteger(typeMirror)) {
+            return ".intValue()";
+        } else if (isLong(typeMirror)) {
+            return ".longValue()";
+        } else if (isByteArray(typeMirror)) {
+            return ".GetBytes()";
+        } else if (typeMirror.toString().equals("java.lang.String")) {
+            return ".String()";
+        } else if (typeMirror.toString().equals("java.math.BigInteger")) {
+            return "";
+        }
+
+        return "";
+    }
+
+
 
     private static String getBasicTypeValStr(Class<?> fieldType){
         if (isInteger(fieldType)){
@@ -281,50 +304,26 @@ class DUTBindingTool {
         return "";
     }
 
-    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
+    static String constructSingleAssignment(String fieldFullName, TypeMirror fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
         String pinFullName = insInfo.getInstanceName() + "." + pinName;
-//        if (isInteger(fieldType)){
-//            if (isIn){
-//                return pinFullName + ".Set(" + fieldFullName + ");\n";
-//
-//            } else {
-//
-//                String signedGet = unsigned? "U()": "S()";
-//                String getIntString = signedGet + ".intValue()";
-//                return fieldFullName + " = " + pinFullName + "." + getIntString + ";\n";
-//            }
-//        } else if (isLong(fieldType)){
-//            if (isIn){
-//                return pinFullName + ".Set(" + fieldFullName + ");\n";
-//            } else {
-//                String signedGet = unsigned? "U()": "S()";
-//                String getLongString = signedGet + ".longValue()";
-//                return fieldFullName + " = " + pinFullName + "." + getLongString + ";\n";
-//            }
-//        } else if (isByteArray(fieldType)){
-//            if (isIn){
-//                return pinFullName + ".Set(" + fieldFullName + ");\n";
-//            } else {
-//                return fieldFullName + " = " + pinFullName + ".GetBytes();\n";
-//            }
-//        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
-//            if (isIn){
-//                return pinFullName + ".Set(" + fieldFullName + ");\n";
-//            } else {
-//                return fieldFullName + " = " + pinFullName + ".String();\n";
-//            }
-//        } else if (fieldType.getCanonicalName().equals(BigInteger.class.getCanonicalName())){
+
         if (isIn){
             return pinFullName + ".Set(" + fieldFullName + ");\n";
         } else {
             String signedGet = unsigned? "U()": "S()";
             return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
         }
+    }
 
-//        }
+    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
+        String pinFullName = insInfo.getInstanceName() + "." + pinName;
 
-
-//        return "";
+        if (isIn){
+            return pinFullName + ".Set(" + fieldFullName + ");\n";
+        } else {
+            String signedGet = unsigned? "U()": "S()";
+            return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
+        }
     }
 
     private static boolean isInteger(Class<?> fieldType){
@@ -351,6 +350,17 @@ class DUTBindingTool {
         return fieldType.getComponentType() == byte.class;
     }
 
+    private static boolean isByteArray(TypeMirror typeMirror) {
+        if (typeMirror.getKind() != TypeKind.ARRAY) {
+            return false;
+        }
+
+        ArrayType arrayType = (ArrayType) typeMirror;
+        TypeMirror componentType = arrayType.getComponentType();
+        return componentType.getKind() == TypeKind.BYTE;
+    }
+
+
 
     static Annotation getAnnotationFromType(TypeMirror type, Class<?> annotationClass) {
         // 检查类型上的注解
@@ -371,62 +381,7 @@ class DUTBindingTool {
         return null; // 没有找到目标注解
     }
 
-    static Class<?> getClassFromTypeMirror(TypeMirror typeMirror) {
-        try {
 
-            // 将 TypeMirror 转为 Class
-            if (typeMirror.getKind() == TypeKind.DECLARED) {
-                DeclaredType declaredType = (DeclaredType) typeMirror;
-                TypeElement typeElement = (TypeElement) declaredType.asElement();
-                String className = typeElement.getQualifiedName().toString();
-                return Class.forName(className);
-            } else if (typeMirror.getKind().isPrimitive()) {
-                // 处理原始类型
-                return getPrimitiveClass(typeMirror.getKind());
-            } else if (typeMirror.getKind() == TypeKind.ARRAY) {
-                // 处理数组类型
-                ArrayType arrayType = (ArrayType) typeMirror;
-                TypeMirror componentType = arrayType.getComponentType();
-                Class<?> componentClass = getClassFromTypeMirror(componentType);
-//                System.out.println(componentClass.getTypeName());
-                return java.lang.reflect.Array.newInstance(componentClass, 0).getClass();
-            } else {
-                throw new IllegalArgumentException("Unsupported type: " + typeMirror);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Failed to get Class<?> from VariableElement", e);
-        }
-    }
-
-    private static Class<?> getPrimitiveClass(TypeKind kind) {
-        switch (kind) {
-            case BOOLEAN:
-                return boolean.class;
-            case BYTE:
-                return byte.class;
-            case SHORT:
-                return short.class;
-            case INT:
-                return int.class;
-            case LONG:
-                return long.class;
-            case CHAR:
-                return char.class;
-            case FLOAT:
-                return float.class;
-            case DOUBLE:
-                return double.class;
-            default:
-                throw new IllegalArgumentException("Unsupported primitive type: " + kind);
-        }
-    }
-
-    static TypeName getTypeNameFromTypeElement(TypeElement fieldType) {
-//        System.out.println(field.asType());
-        TypeMirror dutType = getInheritingType(fieldType, DUTDao.class);
-        return ClassName.bestGuess(dutType.toString());
-    }
 
 
     static TypeMirror getInheritingType(TypeElement fieldType, Class<?> inheritingClass) {
@@ -447,8 +402,6 @@ class DUTBindingTool {
                 if (superInterface instanceof DeclaredType) {
                     DeclaredType declaredType = (DeclaredType) superInterface;
                     if (declaredType.getTypeArguments().size() == 1) {
-                        // 检查泛型参数是否符合预期
-//                        TypeMirror genericArgument = declaredType.getTypeArguments().get(0);
                         // 添加更多泛型验证逻辑（如果需要）
                         return declaredType.getTypeArguments().get(0);
                     } else {

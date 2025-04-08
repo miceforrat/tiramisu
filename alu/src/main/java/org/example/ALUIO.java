@@ -6,7 +6,7 @@ import org.xaspect.datas.Pin;
 import org.xaspect.datas.SubBundle;
 
 @Bundle
-public class ALUIO{
+public class ALUIO {
     @Pin
     int a;
     @Pin()

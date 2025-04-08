@@ -52,8 +52,8 @@
                     <skipTests>false</skipTests>
                     <!--                    <testFailureIgnore>true</testFailureIgnore>-->
                     <!--                    <forkCount>0</forkCount>-->
-                    <parallel>methods</parallel>
-                    <useUnlimitedThreads>true</useUnlimitedThreads>
+<!--                    <parallel>methods</parallel>-->
+<!--                    <useUnlimitedThreads>true</useUnlimitedThreads>-->
                 </configuration>
             </plugin>
 

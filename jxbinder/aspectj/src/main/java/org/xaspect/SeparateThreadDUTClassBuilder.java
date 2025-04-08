@@ -10,12 +10,6 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.ClassName;
 
 import static org.xaspect.DUTBindingTool.*;
 
@@ -43,6 +37,7 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
     private static final String OUT_VALUE_BUNDLES = "outValueMap";
 
     private String resetPinName = "";
+
 
     @Override
     public void buildReset(MethodSpec.Builder methodBuilder) {
@@ -223,13 +218,13 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
         String methodName = method.getSimpleName().toString();
         String outerName = getOutBundleByRaw(methodName);
         MethodSpec.Builder afterStepBuilder = MethodSpec.methodBuilder(getAfterStepFunctionNameByRaw(methodName)).addModifiers(Modifier.PUBLIC).returns(TypeName.VOID);
-        List<String> res = constructGetMethod(method, getPrefix, instanceFieldName, outerName);
+        List<String> res = constructGetMethod(method, getPrefix, new InstanceDUTTypeInfo(instanceFieldName, null), outerName);
         res.forEach(afterStepBuilder::addCode);
         afterStepBuilder.addCode("this.$N.put(\"" + methodName +"\", $N);\n", OUT_VALUE_BUNDLES, outerName);
 
         outFunctionNames.put(methodName, afterStepBuilder.build());
 
-        methodBuilder.addCode("return ($T)this.$N.get(\"" + methodName + "\");\n", getClassFromTypeMirror(method.getReturnType()), OUT_VALUE_BUNDLES);
+        methodBuilder.addCode("return ($T)this.$N.get(\"" + methodName + "\");\n", TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType()), OUT_VALUE_BUNDLES);
     }
     private String getOutBundleByRaw(String raw){
         return raw + "outBundle";
@@ -254,12 +249,12 @@ public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
             //获取公用前缀
             String inputBundleName = param.getSimpleName().toString();
             outsideTasks.add("req.result.put(" + paramIdx + "," + inputBundleName + ");\n");
-            Class<?> paramTypeName = getClassFromTypeMirror(param.asType());
+            Class<?> paramTypeName = TypeParserHelper.getInstance().getClassFromTypeMirror(param.asType());
 
             String trueBundleName = inputBundleName + paramIdx;
 
             methodBuilder.addCode("$T $N = ($T) paramMap.get(" + paramIdx + ");\n", paramTypeName, trueBundleName, paramTypeName);
-            constructOneParamBinding(postPrefix, param, trueBundleName, this.instanceFieldName).forEach(methodBuilder::addCode);
+            constructOneParamBinding(postPrefix, param, trueBundleName, new InstanceDUTTypeInfo(instanceFieldName, null)).forEach(methodBuilder::addCode);
             paramIdx++;
         }
         methodBuilder.addCode("});\n}");

@@ -58,7 +58,7 @@ public class ALUTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        coverageManager.printReport();
+//        coverageManager.printReport();
     }
 
     @Test
