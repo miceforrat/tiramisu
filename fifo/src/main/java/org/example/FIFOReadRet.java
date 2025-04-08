@@ -20,6 +20,7 @@ public class FIFOReadRet{
         this.empty = empty;
         this.full = full;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof FIFOReadRet) {

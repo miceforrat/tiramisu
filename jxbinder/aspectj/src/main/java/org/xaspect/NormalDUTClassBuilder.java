@@ -158,7 +158,7 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
             ret.addAll(constructOneParamBinding(prefix, param, inputBundleName, this.instanceFieldName));
 
         }
-        System.out.println("to add:" + ret);
+//        System.out.println("to add:" + ret);
         return ret;
     }
 

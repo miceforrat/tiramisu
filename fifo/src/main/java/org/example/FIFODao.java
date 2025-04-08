@@ -1,13 +1,15 @@
 package org.example;
 
 import com.ut.UT_FIFO;
-import org.xaspect.DUTWrapper;
+import org.xaspect.DUTDao;
 import org.xaspect.GetMethod;
 import org.xaspect.PostMethod;
 import org.xaspect.datas.OutBundle;
 import org.xaspect.datas.Pin;
 
-public interface FIFOWrapper extends DUTWrapper<UT_FIFO> {
+
+
+public interface FIFODao extends DUTDao<UT_FIFO> {
 
     @PostMethod
     void reset(@Pin("rst_n") int value);

@@ -1,36 +1,48 @@
 package org.example;
 
 import com.ut.UT_FIFO;
-import org.xaspect.AutoDUT;
-import org.xaspect.ConcurrentSupport;
+import org.xaspect.AutoDUTDao;
 
 public class FIFOAgent {
-//    private UT_FIFO fifo = new UT_FIFO();
+    private UT_FIFO fifo = new UT_FIFO();
 
-    @AutoDUT(clockName = "clk", resetName = "rst_n", covFileName = "test.dat")
-    private FIFOWrapper fifo;
+//    @AutoDUT(clockName = "clk", resetName = "rst_n", covFileName = "test.dat")
+//    private FIFODao fifo;
+
+    @AutoDUTDao
+    private FIFODao fifoDao;
 
     FIFOAgent(){
+        fifo.InitClock("clk");
+        fifoDao.bind(fifo);
+        reset();
 //        fifo.Step();
     }
     
     public void finish(){
-        fifo.finish();
+        fifo.Finish();
+    }
+
+    public void reset(){
+        this.fifoDao.reset(0);
+        fifo.Step();
+        this.fifoDao.reset(1);
+        fifo.Step();
     }
 
     public FIFOWriteRet write(int wdata){
-        fifo.setWData(wdata);
-        fifo.setWrEn(1);
+        fifoDao.setWData(wdata);
+        fifoDao.setWrEn(1);
         fifo.Step();
-        fifo.setWrEn(0);
-        return fifo.getAfterWriteStatus();
+        fifoDao.setWrEn(0);
+        return fifoDao.getAfterWriteStatus();
     }
 
     public FIFOReadRet read(){
-        fifo.setRdEn(1);
+        fifoDao.setRdEn(1);
         fifo.Step();
-        fifo.setRdEn(0);
+        fifoDao.setRdEn(0);
         fifo.Step();
-        return fifo.readDataAndStatus();
+        return fifoDao.readDataAndStatus();
     }
 }

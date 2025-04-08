@@ -29,7 +29,7 @@ public class FieldInitializerAspect {
 
     // 在构造方法调用前执行初始化逻辑
     @Before("constructorCall(obj)")
-    public void initializeFields(JoinPoint jp, Object obj) {
+    public void initializeFields(Object obj) {
         Class<?> clazz = obj.getClass();
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
@@ -52,22 +52,6 @@ public class FieldInitializerAspect {
             }
         }
 
-        for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(StaticRefMethod.class)) {
-                System.out.println("@RefWithStaticMethod method found: " + method.getName());
-                StaticRefMethod staticRefMethod = method.getAnnotation(StaticRefMethod.class);
-                String staticMethodId = staticRefMethod.id();
-                method.setAccessible(true);
-                RefRepository.getInstance().registerStaticRefMethod(staticMethodId, method);
-            } else if (method.isAnnotationPresent(InsRefMethod.class)){
-                System.out.println("@RefWithInsMethod found: " + method.getName());
-                InsRefMethod insRefMethod = method.getAnnotation(InsRefMethod.class);
-//                String modelId = refWithInsMethod.modelId();
-                String insMethodId = insRefMethod.id();
-                method.setAccessible(true);
-                RefRepository.getInstance().registerInstanceRefMethod(clazz, insMethodId, method);
-            }
-        }
     }
 
     @Around("@annotation(agentMethod)")

@@ -12,8 +12,8 @@ import java.util.Random;
 public class FIFOTest {
     private FIFOAgent fifo;
     private FIFORef ref;
-    private static int FULL = 8;
-    private static int EMPTY = 0;
+    private static final int FULL = 8;
+    private static final int EMPTY = 0;
     @Before
     public void setUp() {
         fifo = new FIFOAgent();
@@ -49,7 +49,7 @@ public class FIFOTest {
     }
 
 
-    private class FIFORef{
+    private static class FIFORef{
         private final Queue<Integer> queue = new ArrayDeque<>();
 
         public FIFOWriteRet write(int in){

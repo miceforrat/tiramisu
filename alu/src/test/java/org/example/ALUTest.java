@@ -3,6 +3,7 @@ import com.ut.UT_ALU;
 import org.junit.*;
 import org.xaspect.testSupports.CoverageGroup;
 import org.xaspect.testSupports.CoverageManager;
+import org.xaspect.testSupports.RefRepository;
 import org.xaspect.testSupports.WatchPoint;
 //import org.xaspect.executors.HWTaskExecutor;
 
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+
+import static org.junit.Assert.assertEquals;
 
 public class ALUTest {
     
@@ -26,22 +29,23 @@ public class ALUTest {
     @BeforeClass
     public static void setUpBeforeClass() {
         coverageManager = CoverageManager.getCoverageManager("ALU");
+        RefRepository.getInstance().submitRefModel("a", new ALURef());
     }
 
     @Before
     public void setUp() throws Exception {
         alu = new ALUWrapper();
 
-        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
-
-        Map<String, Function<UT_ALU, Boolean>> coverageMap = new HashMap<>();
-
-        for (int i =0 ; i< 16; i++){
-            int finalI = i;
-            coverageMap.put(String.format("Sel%d", i), utAlu -> utAlu.alu_sel.U().intValue() == finalI);
-        }
-
-        testingCoverage.createWatchPointWithClock("32", coverageMap, alu.alu, alu.cm);
+//        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
+//
+//        Map<String, Function<UT_ALU, Boolean>> coverageMap = new HashMap<>();
+//
+//        for (int i =0 ; i< 16; i++){
+//            int finalI = i;
+//            coverageMap.put(String.format("Sel%d", i), utAlu -> utAlu.alu_sel.U().intValue() == finalI);
+//        }
+//
+//        testingCoverage.createWatchPointWithClock("32", coverageMap, alu.alu, alu.cm);
 //        coverageManager.addCoverageGroupForSingleClock(testingCoverage, alu.cm);
 //        coverageManager = CoverageManager.getCoverageManager(alu.cm);
     }
@@ -57,39 +61,39 @@ public class ALUTest {
         coverageManager.printReport();
     }
 
-//    @Test
-//    public void testAdd() {
-//
-//        ALUIO in = new ALUIO();
-//        for (int a = 0; a < 256; a++){
-//            for (int b = 0; b < 256; b++){
-//                in.a = a;
-//                in.b = b;
-//                in.sel = 0;
+    @Test
+    public void testAdd() {
+
+        ALUIO in = new ALUIO();
+        for (int a = 0; a < 256; a++){
+            for (int b = 0; b < 256; b++){
+                in.a = a;
+                in.b = b;
+                in.sel = 0;
+                int res = alu.process(in);
 //                assertEquals((a+b) & limit, alu.process(in));
-//            }
-//        }
-//
-//    }
-//
-//    @Test
-//    public void testAll(){
-//        ALUIO in = new ALUIO();
-//
-//        for (int a = 0; a < 256; a++){
-//            for (int b = 0; b < 256; b++){
-//                for (int c = 0; c < 16; c++){
-//                    in.a = a;
-//                    in.b = b;
-//                    in.sel  = c;
-//                    assertEquals(refModel(in.a, in.b, in.sel),
-//                        alu.process(in)
-//                    );
-//                }
-//            }
-//        }
-////        assertEquals(0, 1);
-//    }
+            }
+        }
+
+    }
+
+    @Test
+    public void testAll(){
+        ALUIO in = new ALUIO();
+
+        for (int a = 0; a < 256; a++){
+            for (int b = 0; b < 256; b++){
+                for (int c = 0; c < 16; c++){
+                    in.a = a;
+                    in.b = b;
+                    in.sel  = c;
+                    int res = alu.process(in);
+//                    assertEquals(refModel(in.a, in.b, in.sel), res);
+                }
+            }
+        }
+//        assertEquals(0, 1);
+    }
 ////
     @Test
     public void randTest(){
@@ -100,8 +104,8 @@ public class ALUTest {
             in.a = random.nextInt( 256);
             in.b = random.nextInt( 256);
             in.sel  = random.nextInt( 16);
-            alu.process(in);
-
+            int res = alu.process(in);
+//            assertEquals(res, refModel(in.a, in.b, in.sel));
         }
     }
 

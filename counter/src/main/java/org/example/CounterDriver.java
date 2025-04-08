@@ -1,33 +1,35 @@
 package org.example;
 import com.ut.UT_Counter;
-import org.xaspect.AutoDUT;
-import org.xaspect.ConcurrentSupport;
+import org.xaspect.AutoDUTDao;
 
 
 public class CounterDriver {
-//    private UT_Counter dut = new UT_Counter();
+    private final UT_Counter dut = new UT_Counter();
 
-    @AutoDUT(clockName = "clk")
-    private UTCounterWrapper wrapper;
+    @AutoDUTDao()
+    private UTCounterDao counterDao;
 
     CounterDriver(){
+        dut.InitClock("clk");
+        counterDao.bind(dut);
+        reset();
     }
 
     public void finish(){
-        wrapper.finish();
+        dut.Finish();
     }
 
     public int tick(){
-        wrapper.Step();
-        return wrapper.getCnt();
+        dut.Step();
+        return counterDao.getCnt();
 //        dut.Step();
 //        return dut.count.U64().intValue();
     }
 
     public void reset(){
-        wrapper.setRst(1);
-        wrapper.Step();
-        wrapper.setRst(0);
+        counterDao.setRst(1);
+        dut.Step();
+        counterDao.setRst(0);
 //        dut.rst.Set(1);
 //        dut.Step();
 //        dut.rst.Set(0);

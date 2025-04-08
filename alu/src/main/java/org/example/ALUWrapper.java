@@ -3,6 +3,8 @@ import com.ut.UT_ALU;
 import org.xaspect.AgentMethod;
 import org.xaspect.AutoDUTDao;
 import org.xaspect.services.XClockManager;
+import org.xaspect.testSupports.RefWithInsMethod;
+import org.xaspect.testSupports.RefWithStaticMethod;
 
 
 public class ALUWrapper {
@@ -25,6 +27,7 @@ public class ALUWrapper {
     }
 
 //    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
+    @RefWithInsMethod(modelId = "a", methodId = "alu")
     public int process(ALUIO in) {
 
         aluDutDao.postIn(in);

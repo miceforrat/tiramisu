@@ -30,14 +30,15 @@ public class RefAspect {
             Object[] args = pjp.getArgs();
 
 
-            Future<Object> refFuture = InnerThreadPool.submit(new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    return method.invoke(null, args);
-                }
-            });
+//            Future<Object> refFuture = InnerThreadPool.submit(new Callable<Object>() {
+//                @Override
+//                public Object call() throws Exception {
+//                    return method.invoke(null, args);
+//                }
+//            });
             Object result = pjp.proceed();
-            Object ref = refFuture.get();
+//            Object ref = refFuture.get();
+            Object ref = method.invoke(null, args);
             if (!ref.equals(result)) {
                 throw new AssertionError("Auto Reference Method Results Assertion Failed: expected: " + ref + ", actual: " + result);
             }
@@ -62,18 +63,20 @@ public class RefAspect {
 
             Object[] args = pjp.getArgs();
 
-            Future<Object> refFuture = InnerThreadPool.submit(new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    return insWithMethod.method.invoke(insWithMethod.instance, args);
-                }
-            });
+//            Future<Object> refFuture = InnerThreadPool.submit(new Callable<Object>() {
+//                @Override
+//                public Object call() throws Exception {
+//                    return insWithMethod.method.invoke(insWithMethod.instance, args);
+//                }
+//            });
 
             Object result = pjp.proceed();
-            Object ref = refFuture.get();
+            Object ref = insWithMethod.method.invoke(insWithMethod.instance, args);
+//            Object ref = refFuture.get();
             if (!ref.equals(result)) {
                 throw new AssertionError("Auto Reference Method Results Assertion Failed: expected: " + ref + ", actual: " + result);
             }
+
             return result;
         } else {
             return pjp.proceed();

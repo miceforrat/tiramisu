@@ -116,7 +116,7 @@ class DUTBindingTool {
 
         List<String> rets = new ArrayList<>();
         String fieldPrefix = IOName;
-        System.err.println("is pin?" + ioParameters.isPin);
+//        System.err.println("is pin?" + ioParameters.isPin);
 
         if (ioParameters.isPin) {
             rets.add(constructSingleAssignment(fieldPrefix, dataClass, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
@@ -130,7 +130,7 @@ class DUTBindingTool {
                 if (enclosedElement.getKind() == ElementKind.FIELD) {
                     VariableElement field = (VariableElement) enclosedElement;
                     processField(field, prefix, insInfo, fieldPrefix, ioParameters, rets);
-                    System.err.println("is field: check rets: " + rets);
+//                    System.err.println("is field: check rets: " + rets);
                 }
             }
 //            }

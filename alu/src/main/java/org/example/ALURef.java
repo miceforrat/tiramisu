@@ -1,8 +1,11 @@
 package org.example;
 
+import org.xaspect.testSupports.InsRefMethod;
+
 public class ALURef {
 
-    public int refModel(ALUIO in){
+    @InsRefMethod(id="alu")
+    public int refModel2(ALUIO in){
         int sel = in.sel;
         int a = in.a;
         int b = in.b;
