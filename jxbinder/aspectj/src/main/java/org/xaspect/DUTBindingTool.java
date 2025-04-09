@@ -1,7 +1,5 @@
 package org.xaspect;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.TypeName;
 import org.xaspect.datas.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -12,11 +10,12 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import java.lang.annotation.Annotation;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.xaspect.TypeParserHelper.*;
 
 class DUTBindingTool {
 
@@ -28,16 +27,30 @@ class DUTBindingTool {
 
         IOParameters ios = new IOParameters();
         ios.isIn = false;
-        Annotation outerPinAnnotation =  getAnnotationFromType(method.getReturnType(), Pin.class);
-        Annotation outerBundleAnnotation =  getAnnotationFromType(method.getReturnType(), OutBundle.class);
+        AnnotationMirror outerPinAnnotation = getAnnotation(method, ReturnsPin.class);
+        AnnotationMirror outerBundleAnnotation =  getAnnotation(method, ReturnsBundle.class);
+//        Annotation outerBundleAnnotation =  getAnnotationFromType(method.getReturnType(), OutBundle.class);
+//        if (outerBundleAnnotation != null) {
+//            OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
+//            outputPrefix += outerBundle.value();
+//            ios.coveringUnsigned = outerBundle.coveringUnsigned();
+//            ios.unsigned = outerBundle.unsigned();
+//        } else if (outerPinAnnotation != null){
+//            outputPrefix += ((Pin) outerPinAnnotation).value();
+//        }
         if (outerBundleAnnotation != null) {
-            OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
-            outputPrefix += outerBundle.value();
-            ios.coveringUnsigned = outerBundle.coveringUnsigned();
-            ios.unsigned = outerBundle.unsigned();
-        } else if (outerPinAnnotation != null){
-            outputPrefix += ((Pin) outerPinAnnotation).value();
+            Boolean coveringUnsigned = (Boolean) getAnnotationValue(outerBundleAnnotation, "coveringUnsigned");
+            Boolean unsigned = (Boolean) getAnnotationValue(outerBundleAnnotation, "unsigned");
+
+            if (coveringUnsigned != null) ios.coveringUnsigned = coveringUnsigned;
+            if (unsigned != null) ios.unsigned = unsigned;
+
+        } else if (outerPinAnnotation != null) {
+            Boolean unsigned = (Boolean) getAnnotationValue(outerPinAnnotation, "unsigned");
+            if (unsigned != null) ios.unsigned = unsigned;
         }
+
+        System.err.println(outerPinAnnotation);
         ios.isPin = outerPinAnnotation != null;
 
         Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
@@ -63,29 +76,51 @@ class DUTBindingTool {
         IOParameters ios = new IOParameters();
         System.err.println("printing...");
 
-        for (String name: instanceField.getFieldNames()){
-            System.err.println(name);
-        }
+        System.err.println(instanceField.getFields());
+
         ios.isIn = true;
         String inputPrefix = prefix;
-        Annotation innerPinAnnotation = getAnnotationFromType(param.asType(), Pin.class);
+//        Annotation innerPinAnnotation = getAnnotationFromType(param.asType(), Pin.class);
+        AnnotationMirror innerPinAnnotation = getAnnotation(param, Pin.class);
 
         ios.isPin = innerPinAnnotation != null;
-        Annotation innerBundleAnnotation = getAnnotationFromType(param.asType(), InBundle.class);
+//        Annotation innerBundleAnnotation = getAnnotationFromType(param.asType(), InBundle.class);
+        AnnotationMirror innerBundleAnnotation = getAnnotation(param, InBundle.class);
         //更新前缀和unsigned设置
+//        if (innerBundleAnnotation != null) {
+//            InBundle inBundle = (InBundle) innerBundleAnnotation;
+//            inputPrefix += inBundle.value();
+//            ios.coveringUnsigned = inBundle.coveringUnsigned();
+//            ios.unsigned = inBundle.unsigned();
+//        } else if (innerPinAnnotation != null) {
+//            Pin pinAnnotation = (Pin) innerPinAnnotation;
+//            if (pinAnnotation.value().isEmpty()){
+//                inputPrefix += param.getSimpleName().toString();
+//            } else {
+//                inputPrefix += pinAnnotation.value();
+//            }
+//            ios.unsigned = pinAnnotation.unsigned();
+//        }
         if (innerBundleAnnotation != null) {
-            InBundle inBundle = (InBundle) innerBundleAnnotation;
-            inputPrefix += inBundle.value();
-            ios.coveringUnsigned = inBundle.coveringUnsigned();
-            ios.unsigned = inBundle.unsigned();
+            String value = (String) getAnnotationValue(innerBundleAnnotation, "value");
+            Boolean coveringUnsigned = (Boolean) getAnnotationValue(innerBundleAnnotation, "coveringUnsigned");
+            Boolean unsigned = (Boolean) getAnnotationValue(innerBundleAnnotation, "unsigned");
+
+            if (value != null) inputPrefix += value;
+            if (coveringUnsigned != null) ios.coveringUnsigned = coveringUnsigned;
+            if (unsigned != null) ios.unsigned = unsigned;
+
         } else if (innerPinAnnotation != null) {
-            Pin pinAnnotation = (Pin) innerPinAnnotation;
-            if (pinAnnotation.value().isEmpty()){
+            String value = (String) getAnnotationValue(innerPinAnnotation, "value");
+            Boolean unsigned = (Boolean) getAnnotationValue(innerPinAnnotation, "unsigned");
+
+            if (value == null || value.isEmpty()) {
                 inputPrefix += param.getSimpleName().toString();
             } else {
-                inputPrefix += pinAnnotation.value();
+                inputPrefix += value;
             }
-            ios.unsigned = pinAnnotation.unsigned();
+
+            if (unsigned != null) ios.unsigned = unsigned;
         }
 
         return constructIO(inputPrefix, param, instanceField, inputBundleName, ios);
@@ -95,26 +130,26 @@ class DUTBindingTool {
     private static List<String> constructIO(String pre, Element element, InstanceDUTTypeInfo insInfo, String IOName, IOParameters ioParameters) {
         String prefix = pre;
         TypeElement dataTypeElement;
-        Class<?> dataClass;
-//        String trueInsPin = "this." + insName + "." + prefix;
-        if (element.getKind() == ElementKind.METHOD) {
-
-            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
-            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
-        } else {
-            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
-            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(element.asType());
-
-        }
-//        TypeMirror dataClass;
+//        Class<?> dataClass;
+////        String trueInsPin = "this." + insName + "." + prefix;
 //        if (element.getKind() == ElementKind.METHOD) {
-//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
 //
-//            dataClass = ((ExecutableElement) element).getReturnType();
+//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
+//            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
 //        } else {
 //            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
-//            dataClass = element.asType();
+//            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(element.asType());
+//
 //        }
+        TypeMirror dataClass;
+        if (element.getKind() == ElementKind.METHOD) {
+            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
+
+            dataClass = ((ExecutableElement) element).getReturnType();
+        } else {
+            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
+            dataClass = element.asType();
+        }
 //        System.err.println("deal with bundle annotation");
         // 处理 Bundle 注解
         if (dataTypeElement != null) {
@@ -315,16 +350,16 @@ class DUTBindingTool {
         }
     }
 
-    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
-        String pinFullName = insInfo.getInstanceName() + "." + pinName;
-
-        if (isIn){
-            return pinFullName + ".Set(" + fieldFullName + ");\n";
-        } else {
-            String signedGet = unsigned? "U()": "S()";
-            return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
-        }
-    }
+//    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
+//        String pinFullName = insInfo.getInstanceName() + "." + pinName;
+//
+//        if (isIn){
+//            return pinFullName + ".Set(" + fieldFullName + ");\n";
+//        } else {
+//            String signedGet = unsigned? "U()": "S()";
+//            return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
+//        }
+//    }
 
     private static boolean isInteger(Class<?> fieldType){
         String typeName = fieldType.getName();
@@ -362,24 +397,24 @@ class DUTBindingTool {
 
 
 
-    static Annotation getAnnotationFromType(TypeMirror type, Class<?> annotationClass) {
-        // 检查类型上的注解
-        for (AnnotationMirror annotationMirror : type.getAnnotationMirrors()) {
-            DeclaredType annotationType = annotationMirror.getAnnotationType();
-            Element annotationElement = annotationType.asElement();
-            if (annotationElement.toString().equals(annotationClass.getCanonicalName())) {
-                return type.getAnnotation((Class<? extends Annotation>) annotationClass); // 找到了目标注解，返回注解对象
-            }
-        }
-
-        // 如果是数组类型，递归检查组件类型
-        if (type.getKind() == TypeKind.ARRAY) {
-            ArrayType arrayType = (ArrayType) type;
-            return getAnnotationFromType(arrayType.getComponentType(), annotationClass);
-        }
-
-        return null; // 没有找到目标注解
-    }
+//    static Annotation getAnnotationFromType(TypeMirror type, Class<?> annotationClass) {
+//        // 检查类型上的注解
+//        for (AnnotationMirror annotationMirror : type.getAnnotationMirrors()) {
+//            DeclaredType annotationType = annotationMirror.getAnnotationType();
+//            Element annotationElement = annotationType.asElement();
+//            if (annotationElement.toString().equals(annotationClass.getCanonicalName())) {
+//                return type.getAnnotation((Class<? extends Annotation>) annotationClass); // 找到了目标注解，返回注解对象
+//            }
+//        }
+//
+//        // 如果是数组类型，递归检查组件类型
+//        if (type.getKind() == TypeKind.ARRAY) {
+//            ArrayType arrayType = (ArrayType) type;
+//            return getAnnotationFromType(arrayType.getComponentType(), annotationClass);
+//        }
+//
+//        return null; // 没有找到目标注解
+//    }
 
 
 

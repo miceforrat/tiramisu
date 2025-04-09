@@ -1,6 +1,8 @@
 package org.xaspect;
 
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -23,14 +25,14 @@ class InstanceDUTTypeInfo {
         return instanceType.typeElement;
     }
 
-    Set<String> getFieldNames() {
-        return instanceType.fieldNames;
+    Map<String, Field> getFields() {
+        return instanceType.fields;
     }
 
 
     private static class SpecificDUTTypeInfo {
         private final TypeElement typeElement;
-        private final Set<String> fieldNames;
+        private final Map<String, VariableElement> fields;
         private static final Map<TypeElement, SpecificDUTTypeInfo> elementMap = new HashMap<>();
 
         private static SpecificDUTTypeInfo getSpecificDUTTypeInfo(TypeElement typeElement) {
@@ -42,7 +44,7 @@ class InstanceDUTTypeInfo {
 
         private SpecificDUTTypeInfo(TypeElement typeElement) {
             this.typeElement = typeElement;
-            fieldNames = TypeParserHelper.getInstance().collectAllFields(typeElement).keySet();
+            fields = TypeParserHelper.getInstance().collectAllFields(typeElement);
             if (typeElement != null) {
                 System.err.println(typeElement.getQualifiedName().toString());
             }

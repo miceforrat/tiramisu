@@ -85,26 +85,26 @@
     <build>
         <plugins>
             <!-- AspectJ Maven Plugin -->
-<!--            <plugin>-->
-<!--                <groupId>org.codehaus.mojo</groupId>-->
-<!--                <artifactId>aspectj-maven-plugin</artifactId>-->
-<!--                <version>1.14.0</version>-->
-<!--                <configuration>-->
-<!--                    <complianceLevel>11</complianceLevel>-->
-<!--                    <source>11</source>-->
-<!--                    <target>11</target>-->
-<!--                    <verbose>true</verbose>-->
-<!--                    <showWeaveInfo>true</showWeaveInfo>-->
-<!--                </configuration>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>compile</goal>-->
-<!--                            <goal>test-compile</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <version>1.14.0</version>
+                <configuration>
+                    <complianceLevel>11</complianceLevel>
+                    <source>11</source>
+                    <target>11</target>
+                    <verbose>true</verbose>
+                    <showWeaveInfo>true</showWeaveInfo>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>test-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 <!--            <plugin>-->
 <!--                <groupId>org.db4j</groupId>-->
 <!--                <artifactId>kilim</artifactId>-->

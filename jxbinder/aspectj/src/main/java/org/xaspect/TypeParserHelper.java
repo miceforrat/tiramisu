@@ -2,18 +2,23 @@ package org.xaspect;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
+import com.sun.source.tree.AnnotatedTypeTree;
+import com.sun.source.tree.AnnotationTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.util.TreePath;
+import com.sun.source.util.Trees;
 
+import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TypeParserHelper {
@@ -37,17 +42,54 @@ public class TypeParserHelper {
         return fields;
     }
 
+    public static @Nullable AnnotationMirror getAnnotation(Element element, Class<?> annotationClass) {
+        // 先从 Element 上找（标准 APT 兼容）
+//        System.err.println(element.getAnnotationMirrors().size());
+        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+//            System.err.println(annotationMirror.getAnnotationType().toString());
+//            System.err.println(annotationClass.getCanonicalName());
+            if (annotationMirror.getAnnotationType().toString().equals(annotationClass.getCanonicalName())) {
+                return annotationMirror;
+            }
+        }
+
+        // 如果没找到，再尝试从 type（ECJ 兼容场景）
+        // 注意：这部分在 javac 下基本没用
+//        if (type instanceof DeclaredType) {
+//            Element typeElement = ((DeclaredType) type).asElement();
+//            for (AnnotationMirror annotationMirror : typeElement.getAnnotationMirrors()) {
+//                if (annotationMirror.getAnnotationType().toString().equals(annotationClass.getCanonicalName())) {
+//                    return annotationMirror;
+//                }
+//            }
+//        }
+
+        return null;
+    }
+
+    public static @Nullable Object getAnnotationValue(AnnotationMirror mirror, String key) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
+                mirror.getElementValues().entrySet()) {
+            if (entry.getKey().getSimpleName().toString().equals(key)) {
+                return entry.getValue().getValue();
+            }
+        }
+        return null;
+    }
+
+
+
     private void collectAllFieldsRecursively(TypeElement typeElement, Map<String, VariableElement> fieldMap) {
-        System.err.println("name: " + typeElement.getSimpleName());
-        System.err.println("Qualified name: " + typeElement.getQualifiedName());
-        System.err.println("Superclass: " + typeElement.getSuperclass());
-        System.err.println("Superclass kind: " + typeElement.getSuperclass().getKind());
-        System.err.println("kind: " + typeElement.getKind());
-        typeElement.getEnclosedElements();
-        System.err.println("kinds: ");
+//        System.err.println("name: " + typeElement.getSimpleName());
+//        System.err.println("Qualified name: " + typeElement.getQualifiedName());
+//        System.err.println("Superclass: " + typeElement.getSuperclass());
+//        System.err.println("Superclass kind: " + typeElement.getSuperclass().getKind());
+//        System.err.println("kind: " + typeElement.getKind());
+//        typeElement.getEnclosedElements();
+//        System.err.println("kinds: ");
         // 先处理子类自己的字段
         for (Element enclosedElement : typeElement.getEnclosedElements()) {
-            System.err.println("  " + enclosedElement);
+//            System.err.println("  " + enclosedElement);
             if (enclosedElement.getKind() == ElementKind.FIELD) {
                 String fieldName = enclosedElement.getSimpleName().toString();
                 if (!fieldMap.containsKey(fieldName)) {
@@ -59,7 +101,6 @@ public class TypeParserHelper {
 
         // 递归处理父类
         TypeMirror superclass = typeElement.getSuperclass();
-        System.err.println("superclass: " + superclass);
         if (superclass.getKind() != TypeKind.NONE) {
             Element superElement = ((DeclaredType) superclass).asElement();
             if (superElement instanceof TypeElement) {

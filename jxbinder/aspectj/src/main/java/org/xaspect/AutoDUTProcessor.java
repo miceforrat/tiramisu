@@ -2,7 +2,6 @@ package org.xaspect;
 
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.*;
-import org.xaspect.executors.DUTClockManager;
 import org.xaspect.datas.*;
 
 import javax.annotation.processing.*;
@@ -278,42 +277,42 @@ public class AutoDUTProcessor extends AbstractProcessor {
         return ret;
     }
 
-    private List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName){
-        String outputPrefix = prefix;
-        List<String> ret = new ArrayList<>();
-
-        IOParameters ios = new IOParameters();
-        ios.isIn = false;
-        Annotation outerPinAnnotation = getAnnotationFromType(method.getReturnType(), Pin.class);
-        Annotation outerBundleAnnotation = getAnnotationFromType(method.getReturnType(), OutBundle.class);
-        if (outerBundleAnnotation != null) {
-            OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
-            outputPrefix += outerBundle.value();
-            ios.coveringUnsigned = outerBundle.coveringUnsigned();
-            ios.unsigned = outerBundle.unsigned();
-        } else if (outerPinAnnotation != null){
-            outputPrefix += ((Pin) outerPinAnnotation).value();
-        }
-        ios.isPin = outerPinAnnotation != null;
-
-        String outerName = "retBundle";
-
-        Class<?> returnTypeCls = getClassFromTypeMirror(method.getReturnType());
-        String typeName = returnTypeCls.getTypeName();
-        String initializr = typeName + " " + outerName ;
-        if (!ios.isPin) {
-            initializr += " = new " + typeName + "()";
-        }
-        initializr += ";\n";
-        ret.add(initializr);
-        List<String> outputAssigns = constructIO(outputPrefix, returnTypeCls, instanceFieldName, outerName, ios);
-
-        ret.addAll(outputAssigns);
-
-        ret.add("return " + outerName + ";\n");
-
-        return ret;
-    }
+//    private List<String> constructGetMethod(ExecutableElement method, String prefix, String instanceFieldName){
+//        String outputPrefix = prefix;
+//        List<String> ret = new ArrayList<>();
+//
+//        IOParameters ios = new IOParameters();
+//        ios.isIn = false;
+//        Annotation outerPinAnnotation = getAnnotationFromType(method.getReturnType(), Pin.class);
+//        Annotation outerBundleAnnotation = getAnnotationFromType(method.getReturnType(), ReturnsBundle.class);
+//        if (outerBundleAnnotation != null) {
+//            ReturnsBundle outerBundle = (ReturnsBundle) outerBundleAnnotation;
+//            outputPrefix += outerBundle.value();
+//            ios.coveringUnsigned = outerBundle.coveringUnsigned();
+//            ios.unsigned = outerBundle.unsigned();
+//        } else if (outerPinAnnotation != null){
+//            outputPrefix += ((Pin) outerPinAnnotation).value();
+//        }
+//        ios.isPin = outerPinAnnotation != null;
+//
+//        String outerName = "retBundle";
+//
+//        Class<?> returnTypeCls = getClassFromTypeMirror(method.getReturnType());
+//        String typeName = returnTypeCls.getTypeName();
+//        String initializr = typeName + " " + outerName ;
+//        if (!ios.isPin) {
+//            initializr += " = new " + typeName + "()";
+//        }
+//        initializr += ";\n";
+//        ret.add(initializr);
+//        List<String> outputAssigns = constructIO(outputPrefix, returnTypeCls, instanceFieldName, outerName, ios);
+//
+//        ret.addAll(outputAssigns);
+//
+//        ret.add("return " + outerName + ";\n");
+//
+//        return ret;
+//    }
 
     private boolean doesClassExist(String packageName, String className) {
         String resourcePath = packageName.replace('.', '/') + "/" + className + ".java";

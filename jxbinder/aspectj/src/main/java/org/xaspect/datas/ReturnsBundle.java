@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
-public @interface Pin {
-    String value() default "";
+@Target(ElementType.METHOD)
+public @interface ReturnsBundle {
+    boolean coveringUnsigned() default false;
     boolean unsigned() default true;
 }

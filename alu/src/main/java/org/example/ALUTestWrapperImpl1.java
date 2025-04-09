@@ -107,7 +107,7 @@ public class ALUTestWrapperImpl1 implements ALUDutDao {
 
 
     @Override
-    public @Pin int getOut() {
+    public int getOut() {
 
 //        if (!consumerMap.containsKey(DUTEvent.OUT)){
 //            semaphoreMap.put(DUTEvent.OUT, new Semaphore(0));
