@@ -1,5 +1,6 @@
 package org.xaspect;
 
+import com.xspcomm.XData;
 import org.xaspect.datas.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -75,9 +76,6 @@ class DUTBindingTool {
 
     static List<String> constructOneParamBinding(String prefix, VariableElement param, String inputBundleName, InstanceDUTTypeInfo instanceField) {
         IOParameters ios = new IOParameters();
-        System.err.println("printing...");
-
-        System.err.println(instanceField.getFields());
 
         ios.isIn = true;
         String inputPrefix = prefix;
@@ -341,8 +339,17 @@ class DUTBindingTool {
     }
 
     static String constructSingleAssignment(String fieldFullName, TypeMirror fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
-        String pinFullName = insInfo.getInstanceName() + "." + pinName;
+        boolean pinExistence =  insInfo.getFields().containsKey(pinName)
+                && (insInfo.getFields().get(pinName).asType().toString().equals(XData.class.getCanonicalName()));
 
+        if (!pinExistence) {
+            System.err.println("pin not exists: " + pinName + ", please recheck!");
+            return "";
+        }
+        
+
+        String pinFullName = insInfo.getInstanceName() + "." + pinName;
+//        System.err.println(insInfo.getFields());
         if (isIn){
             return pinFullName + ".Set(" + fieldFullName + ");\n";
         } else {
