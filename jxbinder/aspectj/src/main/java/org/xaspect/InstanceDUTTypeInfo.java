@@ -25,7 +25,7 @@ class InstanceDUTTypeInfo {
         return instanceType.typeElement;
     }
 
-    Map<String, Field> getFields() {
+    Map<String, VariableElement> getFields() {
         return instanceType.fields;
     }
 
