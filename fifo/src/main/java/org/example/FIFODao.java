@@ -4,9 +4,8 @@ import com.ut.UT_FIFO;
 import org.xaspect.DUTDao;
 import org.xaspect.GetMethod;
 import org.xaspect.PostMethod;
-import org.xaspect.datas.OutBundle;
 import org.xaspect.datas.Pin;
-
+import org.xaspect.datas.ReturnsBundle;
 
 
 public interface FIFODao extends DUTDao<UT_FIFO> {
@@ -24,9 +23,11 @@ public interface FIFODao extends DUTDao<UT_FIFO> {
     void setRdEn(@Pin("rd_en")int value);
 
     @GetMethod
-    @OutBundle FIFOReadRet readDataAndStatus();
+    @ReturnsBundle
+    FIFOReadRet readDataAndStatus();
 
     @GetMethod
-    @OutBundle FIFOWriteRet getAfterWriteStatus();
+    @ReturnsBundle
+    FIFOWriteRet getAfterWriteStatus();
 
 }

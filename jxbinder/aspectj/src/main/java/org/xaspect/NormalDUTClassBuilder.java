@@ -32,7 +32,6 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement typeElement, AutoDUTDao dutInfo) {
         TypeMirror mirror = DUTBindingTool.getInheritingType(typeElement, DUTDao.class);
         TypeName dutTypeName = TypeName.get(mirror);
-        System.err.println(typeElement.getClass());
         this.instanceFieldName = dutTypeName.toString().replace(".", "") + "Instance";
         this.instanceTypeElement = TypeParserHelper.getInstance().getTypeElementFromTypeMirror(mirror);
         FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
@@ -117,6 +116,7 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
         String outerName = "outBundle";
         List<String> res = constructGetMethod(method, getPrefix, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName);
         res.forEach(methodBuilder::addCode);
+        System.err.println(res);
         methodBuilder.addCode("return " + outerName + ";\n");
     }
 
@@ -124,8 +124,10 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
     @Override
     public void buildPostMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
         String postPrefix = prefix + method.getAnnotation(PostMethod.class).prefix();
-//        List<String> res = constructPostMethod(method, postPrefix, instanceFieldName);
-        constructPostMethod(method, postPrefix).forEach(methodBuilder::addCode);
+        List<String> res = constructPostMethod(method, postPrefix);
+        res.forEach(methodBuilder::addCode);
+        System.err.println(res);
+//        constructPostMethod(method, postPrefix).forEach(methodBuilder::addCode);
     }
 
 

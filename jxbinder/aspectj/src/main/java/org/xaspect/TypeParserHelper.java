@@ -46,8 +46,7 @@ public class TypeParserHelper {
         // 先从 Element 上找（标准 APT 兼容）
 //        System.err.println(element.getAnnotationMirrors().size());
         for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
-//            System.err.println(annotationMirror.getAnnotationType().toString());
-//            System.err.println(annotationClass.getCanonicalName());
+
             if (annotationMirror.getAnnotationType().toString().equals(annotationClass.getCanonicalName())) {
                 return annotationMirror;
             }

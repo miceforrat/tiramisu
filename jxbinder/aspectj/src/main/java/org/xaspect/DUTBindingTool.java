@@ -10,6 +10,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import java.awt.desktop.SystemEventListener;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +54,8 @@ class DUTBindingTool {
         System.err.println(outerPinAnnotation);
         ios.isPin = outerPinAnnotation != null;
 
-        Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
-        String typeName = returnTypeCls.getTypeName();
+//        Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
+        String typeName = method.getReturnType().toString();
         String initializr = typeName + " " + outerName ;
         if (!ios.isPin) {
             initializr += " = new " + typeName + "()";

@@ -177,7 +177,6 @@ public class AutoDUTProcessor extends AbstractProcessor {
 //                        res.forEach(methodBody::append);
                         clsBuilder.buildPostMethod(methodBuilder, prefix, method);
                     } else if (method.getAnnotation(GetMethod.class) != null) {
-//                        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
 //                        List<String> res = constructGetMethod(method, getPrefix, instanceFieldName);
 //                        res.forEach(methodBody::append);
                         clsBuilder.buildGetMethod(methodBuilder, prefix, method);
