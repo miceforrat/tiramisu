@@ -6,6 +6,8 @@ import org.xaspect.services.XClockManager;
 import org.xaspect.testSupports.RefWithInsMethod;
 import org.xaspect.testSupports.RefWithStaticMethod;
 
+import java.math.BigInteger;
+
 
 public class ALUWrapper {
 //    @AutoDUT("1")
@@ -27,7 +29,7 @@ public class ALUWrapper {
     }
 
 //    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
-    @RefWithInsMethod(modelId = "a", methodId = "alu")
+//    @RefWithInsMethod(modelId = "a", methodId = "alu")
     public int process(ALUIO in) {
 
         aluDutDao.postIn(in);

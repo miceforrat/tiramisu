@@ -4,6 +4,8 @@ import com.ut.UT_ALU;
 import org.xaspect.datas.*;
 import org.xaspect.*;
 
+import java.math.BigInteger;
+
 public interface ALUDutDao
         extends DUTDao <UT_ALU> {
 

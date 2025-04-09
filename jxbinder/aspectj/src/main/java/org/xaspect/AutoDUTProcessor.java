@@ -59,19 +59,12 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     private void processField(VariableElement field) {
 //        String fieldName = field.getSimpleName().toString();
-        System.err.println("processing field: " + field);
         TypeElement fieldType = elementUtils.getTypeElement(field.asType().toString());
-//        System.out.println(field.asType());
-//        TypeMirror dutType = getInheritingDUTWrapperType(fieldType);
-//        TypeName dutTypeName = ClassName.bestGuess(dutType.toString());
         String packageName = processingEnv.getElementUtils().getPackageOf(fieldType).getQualifiedName().toString();
 //        System.out.println(packageName);
         // 获取字段类型和注解信息
         AutoDUTDao autoDUT = field.getAnnotation(AutoDUTDao.class);
         String prefix = autoDUT.value();
-//        String dutId = autoDUT.id();
-//        String clockName = autoDUT.clockName();
-//        ConcurrentSupport builderType = autoDUT.concurrentSupport();
 
         // 生成实现类名
         String implClassName = fieldType.getSimpleName() + "ImplWithPrefix" + prefix;
@@ -79,7 +72,6 @@ public class AutoDUTProcessor extends AbstractProcessor {
             System.err.println("Class " + implClassName + " already exists, skipping.");
             return;
         }
-        System.out.println("processing field going on ");
         AnnotationSpec annotation = AnnotationSpec.builder(AspectIgnore.class)
                 .build();
         // 构建实现类

@@ -116,7 +116,6 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
         String outerName = "outBundle";
         List<String> res = constructGetMethod(method, getPrefix, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName);
         res.forEach(methodBuilder::addCode);
-        System.err.println(res);
         methodBuilder.addCode("return " + outerName + ";\n");
     }
 
@@ -126,7 +125,6 @@ public class NormalDUTClassBuilder implements DUTClassBuilder{
         String postPrefix = prefix + method.getAnnotation(PostMethod.class).prefix();
         List<String> res = constructPostMethod(method, postPrefix);
         res.forEach(methodBuilder::addCode);
-        System.err.println(res);
 //        constructPostMethod(method, postPrefix).forEach(methodBuilder::addCode);
     }
 

@@ -11,8 +11,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import java.awt.desktop.SystemEventListener;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +50,6 @@ class DUTBindingTool {
             if (unsigned != null) ios.unsigned = unsigned;
         }
 
-        System.err.println(outerPinAnnotation);
         ios.isPin = outerPinAnnotation != null;
 
 //        Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
@@ -129,26 +126,18 @@ class DUTBindingTool {
     private static List<String> constructIO(String pre, Element element, InstanceDUTTypeInfo insInfo, String IOName, IOParameters ioParameters) {
         String prefix = pre;
         TypeElement dataTypeElement;
-//        Class<?> dataClass;
-////        String trueInsPin = "this." + insName + "." + prefix;
-//        if (element.getKind() == ElementKind.METHOD) {
-//
-//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
-//            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(((ExecutableElement) element).getReturnType());
-//        } else {
-//            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
-//            dataClass = TypeParserHelper.getInstance().getClassFromTypeMirror(element.asType());
-//
-//        }
-        TypeMirror dataClass;
-        if (element.getKind() == ElementKind.METHOD) {
-            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement(((ExecutableElement) element).getReturnType());
 
-            dataClass = ((ExecutableElement) element).getReturnType();
+        TypeMirror typeMirror;
+        if (element.getKind() == ElementKind.METHOD) {
+
+            typeMirror = ((ExecutableElement) element).getReturnType();
+
         } else {
-            dataTypeElement = (TypeElement) processingEnv.getTypeUtils().asElement((element).asType());
-            dataClass = element.asType();
+            typeMirror = element.asType();
+
         }
+
+        dataTypeElement = TypeParserHelper.getInstance().getTypeElementFromTypeMirror(typeMirror);
 //        System.err.println("deal with bundle annotation");
         // 处理 Bundle 注解
         if (dataTypeElement != null) {
@@ -163,11 +152,10 @@ class DUTBindingTool {
 //        System.err.println("is pin?" + ioParameters.isPin);
 
         if (ioParameters.isPin) {
-            rets.add(constructSingleAssignment(fieldPrefix, dataClass, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
+            rets.add(constructAssignmentWithCheck(fieldPrefix, typeMirror, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
         } else {
             // 如果元素是类或接口，获取其字段
 
-            System.err.println("entering class");
             Map<String, VariableElement> allVars = TypeParserHelper.getInstance().collectAllFields(dataTypeElement);
             for (VariableElement enclosedElement : allVars.values()) {
                 VariableElement field = enclosedElement;
@@ -302,59 +290,72 @@ class DUTBindingTool {
         return typeMirror.toString().equals("java.lang.Long");
     }
 
-    private static String getBasicTypeValStr(TypeMirror typeMirror) {
+    private static String getBasicTypeValStr(TypeMirror typeMirror, String signedBefore) {
         if (isInteger(typeMirror)) {
-            return ".intValue()";
+            return signedBefore + ".intValue()";
         } else if (isLong(typeMirror)) {
-            return ".longValue()";
+            return signedBefore + ".longValue()";
         } else if (isByteArray(typeMirror)) {
             return ".GetBytes()";
         } else if (typeMirror.toString().equals("java.lang.String")) {
             return ".String()";
         } else if (typeMirror.toString().equals("java.math.BigInteger")) {
-            return "";
+            return signedBefore;
         }
 
         return "";
     }
 
+    private static String constructAssignmentWithCheck(String fieldFullName, TypeMirror fieldType, String pinNamePattern, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
+        if (insInfo.getFields().containsKey(pinNamePattern)){
+            //存在这个变量，而且是XData，就不需要后续的正则检查
+            String pinFullName = insInfo.getInstanceName() + "." + pinNamePattern;
 
+            if (mirrorEqualsClass(insInfo.getFields().get(pinNamePattern).asType(), XData.class)) {
+                return constructSimpleAssignment(pinFullName, fieldFullName, isIn, unsigned, fieldType);
+            }
+        } else {
+            boolean generated = false;
+            String res = "";
+            for (Map.Entry<String, VariableElement> entry : insInfo.getFields().entrySet()) {
+                if (!mirrorEqualsClass(entry.getValue().asType(), XData.class)) {
+                    continue;
+                }
 
-    private static String getBasicTypeValStr(Class<?> fieldType){
-        if (isInteger(fieldType)){
-            return ".intValue()";
+                if (!entry.getKey().matches(pinNamePattern)){
+                    continue;
+                }
 
-        } else if (isLong(fieldType)){
-            return ".longValue()";
+                if (!generated){
+                    generated = true;
+                    String pinFullName = insInfo.getInstanceName() + "." + entry.getKey();
 
-        } else if (isByteArray(fieldType)){
-            return ".GetBytes()";
-        } else if (fieldType.getCanonicalName().equals(String.class.getCanonicalName())){
-            return ".String()";
-        } else if (fieldType.getCanonicalName().equals(BigInteger.class.getCanonicalName())){
-            return "";
+                    res = constructSimpleAssignment(pinFullName, fieldFullName, isIn, unsigned, fieldType);
+                } else {
+                    System.err.println("Different pins match the same pattern: " + pinNamePattern + ", please check!!!");
+                }
+            }
+
+            if (generated){
+                return res;
+            }
+
         }
 
+        System.err.println("pin following pattern: " + pinNamePattern + " is not found, please recheck!");
         return "";
     }
 
-    static String constructSingleAssignment(String fieldFullName, TypeMirror fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
-        boolean pinExistence =  insInfo.getFields().containsKey(pinName)
-                && (insInfo.getFields().get(pinName).asType().toString().equals(XData.class.getCanonicalName()));
+    private static boolean mirrorEqualsClass(TypeMirror typeMirror, Class<?> clazz) {
+        return typeMirror.toString().equals(clazz.getCanonicalName());
+    }
 
-        if (!pinExistence) {
-            System.err.println("pin not exists: " + pinName + ", please recheck!");
-            return "";
-        }
-        
-
-        String pinFullName = insInfo.getInstanceName() + "." + pinName;
-//        System.err.println(insInfo.getFields());
+    private static String constructSimpleAssignment(String pinFullName, String fieldFullName, boolean isIn, boolean unsigned, TypeMirror fieldType) {
         if (isIn){
             return pinFullName + ".Set(" + fieldFullName + ");\n";
         } else {
-            String signedGet = unsigned? "U()": "S()";
-            return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
+            String signedGet = "." + (unsigned? "U()": "S()");
+            return fieldFullName + " = " + pinFullName + getBasicTypeValStr(fieldType, signedGet) + ";\n";
         }
     }
 
@@ -369,29 +370,6 @@ class DUTBindingTool {
 //        }
 //    }
 
-    private static boolean isInteger(Class<?> fieldType){
-        String typeName = fieldType.getName();
-        if (fieldType.isPrimitive()){
-            return typeName.equals("int");
-        }
-        return typeName.equals("java.lang.Integer");
-    }
-
-    private static boolean isLong(Class<?> fieldType){
-        String typeName = fieldType.getName();
-        if (fieldType.isPrimitive()){
-            return typeName.equals("long");
-        }
-        return typeName.equals("java.lang.Long");
-    }
-
-    private static boolean isByteArray(Class<?> fieldType){
-        if (!fieldType.isArray()){
-            return false;
-        }
-
-        return fieldType.getComponentType() == byte.class;
-    }
 
     private static boolean isByteArray(TypeMirror typeMirror) {
         if (typeMirror.getKind() != TypeKind.ARRAY) {

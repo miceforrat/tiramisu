@@ -96,7 +96,6 @@ public class TypeParserHelper {
                 }
             }
         }
-        System.err.println("fieldMap: " + fieldMap);
 
         // 递归处理父类
         TypeMirror superclass = typeElement.getSuperclass();
@@ -159,15 +158,7 @@ public class TypeParserHelper {
     }
 
     TypeElement getTypeElementFromTypeMirror(TypeMirror mirror){
-        if (mirror.getKind() == TypeKind.DECLARED) {
-            System.err.println("TypeMirror class: " + mirror.getClass());
-            Elements utils = processingEnv.getElementUtils();
-            System.err.println("utils setup");
-            TypeElement typeElement = utils.getTypeElement(mirror.toString());
-            System.err.println("TypeElement class: " + typeElement.getClass());
-            return typeElement;
-        }
-        throw new IllegalArgumentException("TypeMirror 无法转换为 TypeElement");
+        return processingEnv.getElementUtils().getTypeElement(mirror.toString());
     }
 
 

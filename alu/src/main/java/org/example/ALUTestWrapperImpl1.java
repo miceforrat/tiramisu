@@ -3,6 +3,7 @@ package org.example;
 import com.ut.UT_ALU;
 import org.xaspect.datas.Pin;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -38,8 +39,6 @@ public class ALUTestWrapperImpl1 implements ALUDutDao {
     }
 
     ALUTestWrapperImpl1() {
-
-
         semaphoreMap.put(DUTEvent.STEP, new Semaphore(0));
         consumerMap.put(DUTEvent.STEP, req -> {
             waitOnStep += 1;
