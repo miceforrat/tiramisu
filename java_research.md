@@ -51,4 +51,5 @@ Adder
         |-- xspcomm-java.jar
 ```
 其中，example\.jar是\-e选项提供的例子，UT\_Adder\-java\.jar是打包的待测用例（DUT），xspcomm\-java.jar则是java语言的统一接口支持。
-在配置maven时，建议将jar包加入私有maven仓库，否则反射拿不到这个类。
+
+可以通过lib的方式引入依赖

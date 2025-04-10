@@ -54,4 +54,6 @@ public interface XService {
     public default void coverageCollect(){
 
     }
+
+
 }

@@ -77,37 +77,37 @@ public class ALUTest {
 
     }
 
-//    @Test
-//    public void testAll(){
-//        ALUIO in = new ALUIO();
-//
-//        for (int a = 0; a < 256; a++){
-//            for (int b = 0; b < 256; b++){
-//                for (int c = 0; c < 16; c++){
-//                    in.a = a;
-//                    in.b = b;
-//                    in.sel  = c;
-//                    int res = alu.process(in);
-////                    assertEquals(refModel(in.a, in.b, in.sel), res);
-//                }
-//            }
-//        }
-////        assertEquals(0, 1);
-//    }
-//////
-//    @Test
-//    public void randTest(){
-//        Random random = new Random();
-//        random.setSeed(System.currentTimeMillis());
-//        ALUIO in = new ALUIO();
-//        for (int i = 0 ; i < 10000; i++){
-//            in.a = random.nextInt( 256);
-//            in.b = random.nextInt( 256);
-//            in.sel  = random.nextInt( 16);
-//            int res = alu.process(in);
-////            assertEquals(res, refModel(in.a, in.b, in.sel));
-//        }
-//    }
+    @Test
+    public void testAll(){
+        ALUIO in = new ALUIO();
+
+        for (int a = 0; a < 256; a++){
+            for (int b = 0; b < 256; b++){
+                for (int c = 0; c < 16; c++){
+                    in.a = a;
+                    in.b = b;
+                    in.sel  = c;
+                    int res = alu.process(in);
+//                    assertEquals(refModel(in.a, in.b, in.sel), res);
+                }
+            }
+        }
+//        assertEquals(0, 1);
+    }
+
+    @Test
+    public void randTest(){
+        Random random = new Random();
+        random.setSeed(System.currentTimeMillis());
+        ALUIO in = new ALUIO();
+        for (int i = 0 ; i < 10000; i++){
+            in.a = random.nextInt( 256);
+            in.b = random.nextInt( 256);
+            in.sel  = random.nextInt( 16);
+            int res = alu.process(in);
+//            assertEquals(res, refModel(in.a, in.b, in.sel));
+        }
+    }
 
 
 

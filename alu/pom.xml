@@ -22,23 +22,6 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/UT_ALU-java.jar</systemPath>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.ut</groupId>-->
-<!--            <artifactId>UT_ALU</artifactId>-->
-<!--            <version>1.0</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.ut</groupId>-->
-<!--            <artifactId>xspcomm-java</artifactId>-->
-<!--            <version>1.0.0</version>-->
-<!--            <scope>system</scope>-->
-<!--            <systemPath>${project.basedir}/lib/xspcomm-java.jar</systemPath>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.ut</groupId>-->
-<!--            <artifactId>xspcomm-java</artifactId>-->
-<!--            <version>1.0.0</version>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.xaspect</groupId>
@@ -51,17 +34,6 @@
             <artifactId>aspectjrt</artifactId>
             <version>1.9.7</version>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>com.ea.async</groupId>-->
-<!--            <artifactId>ea-async</artifactId>-->
-<!--            <version>1.2.3</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>co.paralleluniverse</groupId>-->
-<!--            <artifactId>quasar-core</artifactId>-->
-<!--            <version>0.8.0</version>-->
-<!--        </dependency>-->
 
 
     </dependencies>
