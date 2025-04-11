@@ -15,4 +15,12 @@ public interface ALUDutDao
     @GetMethod(prefix = "alu_out")
     @ReturnsPin
     int getOut();
+
+    @PostMethod
+    void setAb(@Pin int a, @Pin int b);
+
+    @PostMethod
+    void setSel(@Pin("alu_sel") int sel);
+
+
 }

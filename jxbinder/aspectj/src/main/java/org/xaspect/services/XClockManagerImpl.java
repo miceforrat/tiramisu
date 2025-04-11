@@ -50,7 +50,9 @@ public class XClockManagerImpl implements XClockManager {
     }
 
     private void check(boolean stay, Runnable waitAction){
-        if (clockWaiters >= priorities.size()){
+        if (priorities.size() <= 0) {
+            cntLock.unlock();
+        }else if (clockWaiters >= priorities.size()){
             clockWaiters = 0;
             stepClock();
             waitClock.signalAll();
@@ -60,6 +62,8 @@ public class XClockManagerImpl implements XClockManager {
             assert waitAction != null;
             waitAction.run();
             isBlocked.put(Thread.currentThread().getName(), false);
+        } else {
+            cntLock.unlock();
         }
     }
 

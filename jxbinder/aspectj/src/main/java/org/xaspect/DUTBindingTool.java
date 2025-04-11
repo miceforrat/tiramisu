@@ -79,7 +79,7 @@ class DUTBindingTool {
 //        Annotation innerPinAnnotation = getAnnotationFromType(param.asType(), Pin.class);
         AnnotationMirror innerPinAnnotation = getAnnotation(param, Pin.class);
 
-        ios.isPin = innerPinAnnotation != null;
+//        ios.isPin = innerPinAnnotation != null;
 //        Annotation innerBundleAnnotation = getAnnotationFromType(param.asType(), InBundle.class);
         AnnotationMirror innerBundleAnnotation = getAnnotation(param, InBundle.class);
         //更新前缀和unsigned设置
@@ -115,7 +115,7 @@ class DUTBindingTool {
             } else {
                 inputPrefix += value;
             }
-
+            ios.isPin = true;
             if (unsigned != null) ios.unsigned = unsigned;
         }
 
