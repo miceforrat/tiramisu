@@ -1,14 +1,12 @@
 package org.xaspect;
 
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import java.util.List;
 
-public interface DUTClassBuilder {
+public interface DUTDaoBuilder {
 
 
     void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement element, AutoDUTDao daoInfo);

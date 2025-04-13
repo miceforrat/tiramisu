@@ -53,20 +53,24 @@
 <!--            <scope>compile</scope>-->
         </dependency>
 
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.0-jre</version>
+        </dependency>
+
+        <dependency>
+            <groupId>co.paralleluniverse</groupId>
+            <artifactId>quasar-core</artifactId>
+            <version>0.8.0</version>
+        </dependency>
+
 <!--        <dependency>-->
 <!--            <groupId>org.jetbrains.kotlin</groupId>-->
 <!--            <artifactId>kotlin-stdlib</artifactId>-->
 <!--            <version>1.8.20</version>-->
 <!--        </dependency>-->
         <!-- Kotlin 协程支持 -->
-
-
-<!--        <dependency>-->
-<!--            <groupId>org.db4j</groupId>-->
-<!--            <artifactId>kilim</artifactId>-->
-<!--            <version>2.0.1</version>-->
-<!--        </dependency>-->
-
 
 
     </dependencies>

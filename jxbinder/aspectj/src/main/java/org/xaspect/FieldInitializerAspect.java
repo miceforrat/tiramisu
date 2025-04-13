@@ -1,7 +1,6 @@
 package org.xaspect;
 
 
-import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 
@@ -10,10 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-import org.aspectj.lang.reflect.InitializerSignature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.xaspect.datas.Pin;
-import org.xaspect.testSupports.*;
 
 
 @Aspect
@@ -28,71 +25,48 @@ public class FieldInitializerAspect {
     public void constructorCall(Object obj) {}
 
     // 在构造方法调用前执行初始化逻辑
-    @Before("constructorCall(obj)")
+    @Before(value = "constructorCall(obj)", argNames = "obj")
     public void initializeFields(Object obj) {
         Class<?> clazz = obj.getClass();
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
-            // 检查字段是否带有 @AutoDUT 注解
+            // 检查字段是否带有 @AutoDUTDao 注解
             if (field.isAnnotationPresent(AutoDUTDao.class)) {
                 try {
                     field.setAccessible(true);
 
                     // 如果字段未初始化，则自动赋值
                     if (field.get(obj) == null) {
+
                         Class<?> fieldType = field.getType();
                         if (isInterfaceInherited(fieldType, DUTDao.class)) {
                             // 注入实现类实例
-                            field.set(obj, wrapperConstruct(field));
+                            field.set(obj, dutDaoConstruct(field));
                         }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            } else if (field.isAnnotationPresent(AutoDUT.class)) {
+                try{
+                    field.setAccessible(true);
+
+                    if (field.get(obj) == null){
+                        Class<?> fieldType = field.getType();
+                        if (isInterfaceInherited(fieldType, DUTManager.class)){
+                            field.set(obj, dutManagerConstruct(field));
+                        }
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         }
-
     }
 
-    @Around("@annotation(agentMethod)")
-    public Object aroundAgentMethod(ProceedingJoinPoint joinPoint, AgentMethod agentMethod) throws Throwable {
-        // 获取方法信息
-        Method currentMethod = getCurrentMethod(joinPoint);
-        Class<?>[] parameterTypes = currentMethod.getParameterTypes();
-        Class<?> returnType = currentMethod.getReturnType();
+    private final Map<String, DUTDao<?>> existingDaos = new HashMap<>();
 
-        //         获取注解中的方法信息
-        Method refMethod = agentMethod.refClazz().getMethod(agentMethod.refMethodName(), parameterTypes);
-
-        // 验证参数类型和返回值类型
-        if (!returnType.equals(refMethod.getReturnType())) {
-            throw new IllegalArgumentException("Return type mismatch between annotated method and refMethod");
-        }
-
-
-//         获取当前方法的参数
-        Object[] args = joinPoint.getArgs();
-        Object refResult;
-        if (Modifier.isStatic(refMethod.getModifiers())) {
-            // 如果是静态方法，直接通过类调用
-            refResult = refMethod.invoke(null, args);
-        } else {
-            // 如果是实例方法，创建实例后调用
-            Object refInstance = agentMethod.refClazz().getDeclaredConstructor().newInstance();
-            refResult = refMethod.invoke(refInstance, args);
-        }
-        // 执行原方法
-        Object result = joinPoint.proceed();
-        if (!result.equals(refResult)){
-            throw new AssertionError("JXBINDER Assertion Failed: expected: " + refResult + ", actual: " + result);
-        }
-        // 返回原方法的结果
-        return result;
-    }
-
-    private Map<String, DUTDao<?>> existingWrappers = new HashMap<>();
-
-    private DUTDao<?> wrapperConstruct(Field field){
+    private DUTDao<?> dutDaoConstruct(Field field){
 
         Class<?> fieldType = field.getType();
         AutoDUTDao annotation = field.getAnnotation(AutoDUTDao.class);
@@ -101,8 +75,8 @@ public class FieldInitializerAspect {
         // 获取实现类的全限定名
         String implClassName = fieldType.getCanonicalName() + "ImplWithPrefix" + annotation.value(); // 假设生成的类名规则为 "FieldTypeImpl"
 
-        if (existingWrappers.get(implClassName) != null) {
-            return existingWrappers.get(implClassName);
+        if (existingDaos.get(implClassName) != null) {
+            return existingDaos.get(implClassName);
         }
 
         try {
@@ -110,8 +84,31 @@ public class FieldInitializerAspect {
             Class<?> implClass = Class.forName(implClassName);
             System.out.println(implClassName);
             DUTDao<?> wrapperImpl = (DUTDao<?>) implClass.getConstructor().newInstance();
-            existingWrappers.put(implClassName, wrapperImpl);
+            existingDaos.put(implClassName, wrapperImpl);
             return wrapperImpl;
+            // 使用构造方法实例化实现类
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to construct wrapper for field: " + field.getName(), e);
+        }
+    }
+
+    private final Map<String, DUTManager<?>> existingManagers = new HashMap<>();
+    private DUTManager<?> dutManagerConstruct(Field field){
+        Class<?> fieldType = field.getType();
+        String implClassName = fieldType.getCanonicalName() + "Impl";
+
+        if (existingManagers.get(implClassName) != null) {
+            return existingManagers.get(implClassName);
+        }
+
+        try {
+            // 使用反射加载生成的实现类
+            Class<?> implClass = Class.forName(implClassName);
+            System.out.println(implClassName);
+            DUTManager<?> managerImpl = (DUTManager<?>) implClass.getConstructor().newInstance();
+            existingManagers.put(implClassName, managerImpl);
+            return managerImpl;
             // 使用构造方法实例化实现类
         } catch (Exception e) {
             e.printStackTrace();

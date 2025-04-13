@@ -10,4 +10,5 @@ import java.lang.annotation.Target;
 public @interface Pin {
     String value() default "";
     boolean unsigned() default true;
+//    int resumeValue() default 0;
 }

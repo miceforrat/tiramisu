@@ -15,7 +15,7 @@ import java.util.List;
 
 import static org.xaspect.DUTBindingTool.*;
 
-public class NormalDUTClassBuilder implements DUTClassBuilder{
+public class NormalDUTDaoBuilder implements DUTDaoBuilder {
 
     private String instanceFieldName = "";
 

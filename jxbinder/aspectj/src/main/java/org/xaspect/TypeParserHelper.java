@@ -17,9 +17,8 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.lang.model.util.Types;
+import java.util.*;
 
 public class TypeParserHelper {
 
@@ -32,14 +31,6 @@ public class TypeParserHelper {
             instance = new TypeParserHelper();
         }
         return instance;
-    }
-
-    Map<String, VariableElement> collectAllFields(TypeElement typeElement){
-        Map<String, VariableElement> fields = new HashMap<>();
-        if (typeElement != null) {
-            collectAllFieldsRecursively(typeElement, fields);
-        }
-        return fields;
     }
 
     public static @Nullable AnnotationMirror getAnnotation(Element element, Class<?> annotationClass) {
@@ -76,36 +67,89 @@ public class TypeParserHelper {
         return null;
     }
 
+    private List<TypeElement> getAllSuperTypes(TypeElement type) {
+        List<TypeElement> result = new ArrayList<>();
+        Queue<TypeMirror> toProcess = new LinkedList<>();
+        toProcess.add(type.asType());
 
+        while (!toProcess.isEmpty()) {
+            TypeMirror current = toProcess.poll();
+            TypeElement currentElement = ((TypeElement) processingEnv.getTypeUtils().asElement(current));
+            if (currentElement != null && !result.contains(currentElement)) {
+                result.add(currentElement);
 
-    private void collectAllFieldsRecursively(TypeElement typeElement, Map<String, VariableElement> fieldMap) {
-//        System.err.println("name: " + typeElement.getSimpleName());
-//        System.err.println("Qualified name: " + typeElement.getQualifiedName());
-//        System.err.println("Superclass: " + typeElement.getSuperclass());
-//        System.err.println("Superclass kind: " + typeElement.getSuperclass().getKind());
-//        System.err.println("kind: " + typeElement.getKind());
-//        typeElement.getEnclosedElements();
-//        System.err.println("kinds: ");
-        // 先处理子类自己的字段
-        for (Element enclosedElement : typeElement.getEnclosedElements()) {
-//            System.err.println("  " + enclosedElement);
-            if (enclosedElement.getKind() == ElementKind.FIELD) {
-                String fieldName = enclosedElement.getSimpleName().toString();
-                if (!fieldMap.containsKey(fieldName)) {
-                    fieldMap.put(fieldName, (VariableElement) enclosedElement);
+                // 添加直接父类
+                TypeMirror superclass = currentElement.getSuperclass();
+                if (superclass.getKind() != TypeKind.NONE) {
+                    toProcess.add(superclass);
+                }
+
+                // 添加直接接口
+                toProcess.addAll(currentElement.getInterfaces());
+            }
+        }
+        return result;
+    }
+
+    Map<String, VariableElement> collectAllFields(TypeElement type) {
+        Map<String, VariableElement> fieldMap = new HashMap<>();
+        for (TypeElement superType : getAllSuperTypes(type)) {
+            // 跳过接口（接口中不会有字段）
+            if (superType.getKind() == ElementKind.INTERFACE) continue;
+
+            for (Element e : superType.getEnclosedElements()) {
+                if (e.getKind() == ElementKind.FIELD) {
+                    String name = e.getSimpleName().toString();
+                    fieldMap.putIfAbsent(name, (VariableElement) e);
                 }
             }
         }
+        return fieldMap;
+    }
 
-        // 递归处理父类
-        TypeMirror superclass = typeElement.getSuperclass();
-        if (superclass.getKind() != TypeKind.NONE) {
-            Element superElement = ((DeclaredType) superclass).asElement();
-            if (superElement instanceof TypeElement) {
-                collectAllFieldsRecursively((TypeElement) superElement, fieldMap);
+    Map<String, ExecutableElement> collectAllMethods(TypeElement type) {
+        Map<String, ExecutableElement> methodMap = new LinkedHashMap<>();
+        for (TypeElement superType : getAllSuperTypes(type)) {
+            for (Element e : superType.getEnclosedElements()) {
+                if (e.getKind() == ElementKind.METHOD) {
+                    String nameParams = e.getSimpleName().toString() + ((ExecutableElement) e).getParameters().toString();
+                    methodMap.putIfAbsent(nameParams, (ExecutableElement) e);
+                }
             }
         }
+        return methodMap;
     }
+
+
+//    Map<String, VariableElement> collectAllFields(TypeElement typeElement){
+//        Map<String, VariableElement> fields = new HashMap<>();
+//        if (typeElement != null) {
+//            collectAllFieldsRecursively(typeElement, fields);
+//        }
+//        return fields;
+//    }
+//
+//    private void collectAllFieldsRecursively(TypeElement typeElement, Map<String, VariableElement> fieldMap) {
+//        // 先处理子类自己的字段
+//        for (Element enclosedElement : typeElement.getEnclosedElements()) {
+////            System.err.println("  " + enclosedElement);
+//            if (enclosedElement.getKind() == ElementKind.FIELD) {
+//                String fieldName = enclosedElement.getSimpleName().toString();
+//                if (!fieldMap.containsKey(fieldName)) {
+//                    fieldMap.put(fieldName, (VariableElement) enclosedElement);
+//                }
+//            }
+//        }
+//
+//        // 递归处理父类
+//        TypeMirror superclass = typeElement.getSuperclass();
+//        if (superclass.getKind() != TypeKind.NONE) {
+//            Element superElement = ((DeclaredType) superclass).asElement();
+//            if (superElement instanceof TypeElement) {
+//                collectAllFieldsRecursively((TypeElement) superElement, fieldMap);
+//            }
+//        }
+//    }
 
     Class<?> getClassFromTypeMirror(TypeMirror typeMirror) {
         try {

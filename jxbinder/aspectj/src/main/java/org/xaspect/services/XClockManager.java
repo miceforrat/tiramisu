@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 public interface XClockManager {
     void register();
 
-    void register(int priority);
+//    void register(int priority);
 
     void unregister();
 

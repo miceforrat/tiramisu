@@ -17,7 +17,7 @@ import java.util.Map;
 
 import static org.xaspect.TypeParserHelper.*;
 
-class DUTBindingTool {
+public class DUTBindingTool {
 
     static ProcessingEnvironment processingEnv;
 
@@ -330,8 +330,8 @@ class DUTBindingTool {
         Types typeUtils = processingEnv.getTypeUtils();
         Elements elementUtils = processingEnv.getElementUtils();
 
-        // 获取 DUTWrapper 的类型
-        TypeElement dutWrapperElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName()); // 替换为 DUTWrapper 的全限定名
+        // 获取类型
+        TypeElement dutWrapperElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName()); // 替换全限定名
         if (dutWrapperElement == null) {
             throw new IllegalStateException("DUTWrapper not found in the classpath");
         }

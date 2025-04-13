@@ -1,6 +1,5 @@
 package org.xaspect;
 
-import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
@@ -14,7 +13,7 @@ import java.util.*;
 import static org.xaspect.DUTBindingTool.*;
 
 
-public class SeparateThreadDUTClassBuilder implements DUTClassBuilder{
+public class SeparateThreadDUTDaoBuilder implements DUTDaoBuilder {
 
     private String instanceFieldName;
 

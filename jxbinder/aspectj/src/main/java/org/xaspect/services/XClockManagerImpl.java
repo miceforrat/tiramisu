@@ -75,11 +75,6 @@ public class XClockManagerImpl implements XClockManager {
     public void Step(){
         cntLock.lock();
         // TODO: multi waiters need to be check further more
-//        if (priorities.size() <= 1){
-//            // 不存在多个进程/线程，视为串行
-//            clock.Step();
-//            cntLock.unlock();
-//        } else {
         clockWaiters += 1;
         //进入临界区
         check(true, waitClock::awaitUninterruptibly);

@@ -1,5 +1,7 @@
 package org.xaspect;
 
+import org.xaspect.services.ConcurrentSupport;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -8,8 +10,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface AutoDUT {
-    String value() default ""; // prefix for the whole dut, default is none
-    String id() default ""; // support for multiple examples
+//    String value() default ""; // dut i
+//    String id() default ""; // support for multiple examples
     String clockName() default "";
     String resetName() default "";
     ConcurrentSupport concurrentSupport() default ConcurrentSupport.NORMAL;

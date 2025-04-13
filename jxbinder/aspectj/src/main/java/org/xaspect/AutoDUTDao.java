@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * should provide default non param constructor
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD})
 public @interface AutoDUTDao {
 
     String value() default "";

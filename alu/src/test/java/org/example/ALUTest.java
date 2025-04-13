@@ -61,111 +61,53 @@ public class ALUTest {
 //        coverageManager.printReport();
     }
 
-//    @Test
-//    public void testAdd() {
-//
-//        ALUIO in = new ALUIO();
-//        for (int a = 0; a < 256; a++){
-//            for (int b = 0; b < 256; b++){
-//                in.a = a;
-//                in.b = b;
-//                in.sel = 0;
-//                int res = alu.process(in);
-////                assertEquals((a+b) & limit, alu.process(in));
-//            }
-//        }
-//
-//    }
-
-//    @Test
-//    public void testAll(){
-//        ALUIO in = new ALUIO();
-//
-//        for (int a = 0; a < 256; a++){
-//            for (int b = 0; b < 256; b++){
-//                for (int c = 0; c < 16; c++){
-//                    in.a = a;
-//                    in.b = b;
-//                    in.sel  = c;
-//                    int res = alu.process(in);
-////                    assertEquals(refModel(in.a, in.b, in.sel), res);
-//                }
-//            }
-//        }
-//    }
-
-//    @Test
-//    public void randTest(){
-//        Random random = new Random();
-//        random.setSeed(System.currentTimeMillis());
-//        ALUIO in = new ALUIO();
-//        for (int i = 0 ; i < 10000; i++){
-//            in.a = random.nextInt( 256);
-//            in.b = random.nextInt( 256);
-//            in.sel  = random.nextInt( 16);
-//            int res = alu.process(in);
-////            assertEquals(res, refModel(in.a, in.b, in.sel));
-//        }
-//    }
     @Test
-    public void parallelTest(){
-//        List<Thread> threads = new ArrayList<>();
-//        Semaphore sem = new Semaphore(0);
-//        AtomicInteger wait = new AtomicInteger(0);
-//
-//        Lock lock = new ReentrantLock();
-//
-//        Thread thread1 = new Thread(()->{
-////            alu.cm.register();
-////            if (wait.incrementAndGet() < 2){
-////                sem.acquireUninterruptibly();
-////            } else {
-////                sem.release(wait.get() - 1);
-////            }
-//            for (int i = 0; i < 100; i++){
-//                Random random = new Random();
-//                int a = random.nextInt(256);
-//                int b = random.nextInt(256);
-//                lock.lock();
-//                alu.mainFunc(a,b);
-//                lock.unlock();
-//            }
-//        });
-        for (int i = 0; i < 100; i++){
-            Random random = new Random();
-            int a = random.nextInt(256);
-            int b = random.nextInt(256);
-            alu.mainFunc(a,b);
+    public void testAdd() {
+
+        ALUIO in = new ALUIO();
+        for (int a = 0; a < 256; a++){
+            for (int b = 0; b < 256; b++){
+                in.a = a;
+                in.b = b;
+                in.sel = 0;
+                int res = alu.process(in);
+//                assertEquals((a+b) & limit, alu.process(in));
+            }
         }
 
-//        threads.add(thread1);
-//        thread1.start();
-//        Thread thread2 = new Thread(()->{
-////            alu.cm.register();
-////            if (wait.incrementAndGet() < 2){
-////                sem.acquireUninterruptibly();
-////            } else {
-////                sem.release(wait.get() - 1);
-////            }
-//            for (int i = 0; i < 100; i++){
-//                Random random = new Random();
-//                int sel = random.nextInt(16);
-//                lock.lock();
-//                alu.anotherFunc(sel);
-//                lock.unlock();
-//            }
-//        });
-//        threads.add(thread2);
-//        thread2.start();
-//
-//        for (Thread thread : threads){
-//            try {
-//                thread.join();
-//            } catch (InterruptedException e) {
-////                throw new RuntimeException(e);
-//            }
-//        }
     }
+
+    @Test
+    public void testAll(){
+        ALUIO in = new ALUIO();
+
+        for (int a = 0; a < 256; a++){
+            for (int b = 0; b < 256; b++){
+                for (int c = 0; c < 16; c++){
+                    in.a = a;
+                    in.b = b;
+                    in.sel  = c;
+                    int res = alu.process(in);
+//                    assertEquals(refModel(in.a, in.b, in.sel), res);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void randTest(){
+        Random random = new Random();
+        random.setSeed(System.currentTimeMillis());
+        ALUIO in = new ALUIO();
+        for (int i = 0 ; i < 10000; i++){
+            in.a = random.nextInt( 256);
+            in.b = random.nextInt( 256);
+            in.sel  = random.nextInt( 16);
+            int res = alu.process(in);
+//            assertEquals(res, refModel(in.a, in.b, in.sel));
+        }
+    }
+
 
 
     private int refModel(int a, int b, int sel){
