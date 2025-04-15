@@ -9,7 +9,6 @@ import javax.lang.model.element.*;
 import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import javax.swing.*;
 import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.util.*;
@@ -65,6 +64,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
         TypeElement fieldType = elementUtils.getTypeElement(field.asType().toString());
         String packageName = processingEnv.getElementUtils().getPackageOf(fieldType).getQualifiedName().toString();
         AutoDUT autoDUT = field.getAnnotation(AutoDUT.class);
+        if (fieldType.getKind() != ElementKind.INTERFACE){
+            throw new IllegalArgumentException("AutoDUT field must be an interface");
+        }
         String implClassName = fieldType.getSimpleName() + "Impl";
         if (doesClassExist(packageName, implClassName)){
             System.err.println("Class " + implClassName + " already exists, skipping.");
@@ -78,12 +80,14 @@ public class AutoDUTProcessor extends AbstractProcessor {
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(annotation)
                 .addSuperinterface(ClassName.get(fieldType));
-        DUTManagerBuilder builder = new DUTManagerNormalBuilder();
 
-        if (fieldType.getSuperclass().toString().equals(DUTManager.class.getName())){
-            builder = new DUTManagerNormalBuilder();
+
+
+        DUTManagerBuilder builder;
+        if (TypeParserHelper.getInstance().directlyImplementsInterface(fieldType, DUTCoroutineManager.class)){
+            builder = new DUTCoroutineManagerBuilder();
         } else {
-
+            builder = new DUTNormalManagerBuilder();
         }
 
         builder.buildConstructor(implClassBuilder, fieldType, autoDUT);
@@ -120,20 +124,15 @@ public class AutoDUTProcessor extends AbstractProcessor {
             }
 //            System.err.println(methodName);
             // 构造方法体
-            if (methodName.equals("step")) {
-//                        String stepTime = "1";
-                if (method.getParameters().size() == 1) {
-                    String stepTime = method.getParameters().get(0).getSimpleName().toString();
-                    builder.buildStep(stepTime, methodBuilder);
-                } else {
-                    builder.buildStep(methodBuilder);
-                }
-//                        methodBody.append("this." +  clkManagerName + ".waitForSteps(\"" + instanceFieldName +"\", " + stepTime + ");\n");
-            } else if (methodName.equals("finish")) {
+            if (methodName.equals("finish")) {
                 builder.buildFinish(methodBuilder);
             } else if (methodName.equals("getDUT")) {
                 builder.buildGetDUT(methodBuilder);
-            }else {
+            } else if (methodName.equals("getXClockManager")){
+                builder.buildGetXClockManager(methodBuilder);
+            }else if (methodName.equals("getServiceRunner")) {
+                builder.buildGetServiceRunner(methodBuilder);
+            } else {
                 methodBuilder.addCode("System.out.println(\"Calling method: " + methodName + "\");\n");
                 if (!returnType.toString().equals("void")) {
                     methodBuilder.addCode("return null; // Replace with actual implementation\n");
@@ -144,10 +143,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
             // 添加方法到实现类
             implClassBuilder.addMethod(methodBuilder.build());
         }
-
         JavaFile javaFile = JavaFile.builder(packageName, builder.build(implClassBuilder))
                 .build();
-
+        System.err.println(javaFile);
         try {
             javaFile.writeTo(filer);
         } catch (IOException e) {

@@ -1,13 +1,13 @@
 package org.xaspect;
 
 
+import org.xaspect.services.XClockManager;
+
 public interface DUTManager<DUT>{
 
     DUT getDUT();
 
-    void step();
-
-    void step(int steps);
+    XClockManager getXClockManager();
 
     void finish();
 }

@@ -22,19 +22,21 @@ public class ALUTest {
 
 //    @AutoDUT
 //    ALUWrapper alu = new ALUWrapper();
-    ALUWrapper alu;
+    static ALUWrapper alu;
 
     static CoverageManager coverageManager;
 
     @BeforeClass
     public static void setUpBeforeClass() {
 //        coverageManager = CoverageManager.getCoverageManager("ALU");
+        alu = new ALUWrapper();
+
         RefRepository.getInstance().submitRefModel("a", new ALURef());
     }
 
     @Before
     public void setUp() throws Exception {
-        alu = new ALUWrapper();
+//        alu = new ALUWrapper();
 
 //        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
 //
@@ -58,6 +60,8 @@ public class ALUTest {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
+         alu.clear();
+
 //        coverageManager.printReport();
     }
 

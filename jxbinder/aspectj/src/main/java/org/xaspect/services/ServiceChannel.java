@@ -1,102 +1,81 @@
 package org.xaspect.services;
 
+import co.paralleluniverse.fibers.Fiber;
+import co.paralleluniverse.fibers.FiberScheduler;
+import co.paralleluniverse.fibers.SuspendExecution;
+import co.paralleluniverse.fibers.Suspendable;
+import co.paralleluniverse.strands.SuspendableRunnable;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class ServiceChannel {
+public class ServiceChannel implements SuspendableRunnable{
 
-    XClockManager mainClock = null;
+    XClockCoroutineManager mainClock = null;
 
-    private interface ServiceInChannel {
-        void run();
-        XClockManager getServiceClock();
-    }
-
-    private static class NormalXService implements ServiceInChannel {
-        private final XService service;
-        private final List<Object> params;
-
-        NormalXService(XService service, List<Object> params) {
-            this.service = service;
-            this.params = params;
-        }
-
-        @Override
-        public void run() {
-            this.service.run(params);
-        }
-
-        @Override
-        public XClockManager getServiceClock() {
-            return service.getClockManager();
-        }
+    private interface ServiceInChannel extends SuspendableRunnable {
+//        void run();
+//        XClockCoroutineManager getServiceClock();
     }
 
 
     private static class RunnableXService implements ServiceInChannel {
-        private final Runnable runnable;
-        private final XClockManager clockManager;
-        RunnableXService(Runnable runnable, XClockManager clockManager) {
+        private final SuspendableRunnable runnable;
+//        private final XClockCoroutineManager clockManager;
+        RunnableXService(SuspendableRunnable runnable) {
 
             this.runnable = runnable;
-            this.clockManager = clockManager;
+//            this.clockManager = clockManager;
         }
 
         @Override
-        public void run() {
+        public void run() throws SuspendExecution, InterruptedException {
             this.runnable.run();
         }
 
-        @Override
-        public XClockManager getServiceClock() {
-            return this.clockManager;
-        }
+//        @Override
+//        public XClockCoroutineManager getServiceClock() {
+//            return this.clockManager;
+//        }
     }
 
 
     //这个类是内部使用，用于主时钟的Step
     private static class StepXService implements ServiceInChannel {
-        XClockManager clockManager;
+        XClockCoroutineManager clockManager;
         int step;
-        StepXService(XClockManager clockManager, int step) {
+        StepXService(XClockCoroutineManager clockManager) {
+            this(clockManager, 1);
+        }
+
+        StepXService(XClockCoroutineManager clockManager, int step) {
             this.clockManager = clockManager;
             this.step = step;
         }
 
         @Override
-        public void run() {
-            this.clockManager.Step(step);
+        public void run() throws SuspendExecution, InterruptedException {
+            this.clockManager.step(step);
         }
 
-        @Override
-        public XClockManager getServiceClock() {
-            return null;
-        }
+//        @Override
+//        public XClockCoroutineManager getServiceClock() {
+//            return clockManager;
+//        }
     }
 
     private final List<ServiceInChannel> serviceInChannels = new ArrayList<>();
 
     ServiceChannel() {}
 
-    ServiceChannel(XClockManager mainClock) {
+    ServiceChannel(XClockCoroutineManager mainClock) {
         this.mainClock = mainClock;
     }
 
-    public ServiceChannel addXService(XService service) {
-        checkMainClock(mainClock);
-        this.serviceInChannels.add(new NormalXService(service, null));
-        return this;
-    }
 
-    public ServiceChannel addXService(XService service, List<Object> params) {
-        checkMainClock(service.getClockManager());
-        this.serviceInChannels.add(new NormalXService(service, params));
-        return this;
-    }
-
-    public ServiceChannel addRunnable(Runnable runnable, XClockManager clock) {
-        checkMainClock(clock);
-        this.serviceInChannels.add(new RunnableXService(runnable, clock));
+    public ServiceChannel addSuspendableRunnable(SuspendableRunnable runnable) {
+//        checkMainClock(clock);
+        this.serviceInChannels.add(new RunnableXService(runnable));
         return this;
     }
 
@@ -120,14 +99,27 @@ public class ServiceChannel {
         this.mainClock.register();
     }
 
-    void run(){
+    @Override
+    @Suspendable
+    public void run() throws SuspendExecution, InterruptedException {
         for (ServiceInChannel serviceInChannel : serviceInChannels) {
             serviceInChannel.run();
         }
-        this.mainClock.unregister();
+        mainClock.deregister();
     }
 
-    void checkMainClock(XClockManager clock) {
+    //    void run(){
+//        for (ServiceInChannel serviceInChannel : serviceInChannels) {
+//            try {
+//                serviceInChannel.run();
+//            } catch (SuspendExecution | InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//
+//    }
+
+    void checkMainClock(XClockCoroutineManager clock) {
         if (mainClock == null) {
             mainClock = clock;
         } else {

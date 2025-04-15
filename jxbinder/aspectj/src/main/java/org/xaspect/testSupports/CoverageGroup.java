@@ -1,10 +1,8 @@
 package org.xaspect.testSupports;
 
-import org.checkerframework.checker.units.qual.C;
-import org.xaspect.services.XClockManager;
+import org.xaspect.services.XClockCoroutineManager;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class CoverageGroup {
@@ -16,7 +14,7 @@ public class CoverageGroup {
 
     private final Map<String, Map<String, Integer>> watchRecords = new HashMap<>();
 
-    private final Map<XClockManager, List<WatchPoint<?>>> clockWithPoints = new HashMap<>();
+    private final Map<XClockCoroutineManager, List<WatchPoint<?>>> clockWithPoints = new HashMap<>();
 
     CoverageGroup(String groupName) {
 
@@ -43,13 +41,13 @@ public class CoverageGroup {
         return new WatchPoint<>(name, bins, target);
     }
 
-    public <T> WatchPoint<T> createWatchPointWithClock(String name, Map<String, Function<T, Boolean>> bins, T target, XClockManager clockManager) {
+    public <T> WatchPoint<T> createWatchPointWithClock(String name, Map<String, Function<T, Boolean>> bins, T target, XClockCoroutineManager clockManager) {
         WatchPoint<T> watchPoint = createWatchPoint(name, bins, target);
         bindWithClock(clockManager, watchPoint);
         return watchPoint;
     }
 
-    public void bindWithClock(XClockManager clockManager, WatchPoint<?> watchPoint) {
+    public void bindWithClock(XClockCoroutineManager clockManager, WatchPoint<?> watchPoint) {
         if (!clockWithPoints.containsKey(clockManager)) {
             clockWithPoints.put(clockManager, new ArrayList<>());
             clockManager.stepRis(aLong -> {

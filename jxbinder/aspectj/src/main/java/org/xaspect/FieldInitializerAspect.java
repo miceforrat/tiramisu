@@ -64,7 +64,7 @@ public class FieldInitializerAspect {
         }
     }
 
-    private final Map<String, DUTDao<?>> existingDaos = new HashMap<>();
+//    private final Map<String, DUTDao<?>> existingDaos = new HashMap<>();
 
     private DUTDao<?> dutDaoConstruct(Field field){
 
@@ -75,16 +75,16 @@ public class FieldInitializerAspect {
         // 获取实现类的全限定名
         String implClassName = fieldType.getCanonicalName() + "ImplWithPrefix" + annotation.value(); // 假设生成的类名规则为 "FieldTypeImpl"
 
-        if (existingDaos.get(implClassName) != null) {
-            return existingDaos.get(implClassName);
-        }
+//        if (existingDaos.get(implClassName) != null) {
+//            return existingDaos.get(implClassName);
+//        }
 
         try {
             // 使用反射加载生成的实现类
             Class<?> implClass = Class.forName(implClassName);
             System.out.println(implClassName);
             DUTDao<?> wrapperImpl = (DUTDao<?>) implClass.getConstructor().newInstance();
-            existingDaos.put(implClassName, wrapperImpl);
+//            existingDaos.put(implClassName, wrapperImpl);
             return wrapperImpl;
             // 使用构造方法实例化实现类
         } catch (Exception e) {

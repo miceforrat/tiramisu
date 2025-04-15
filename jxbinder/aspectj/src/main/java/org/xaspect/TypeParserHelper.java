@@ -205,6 +205,22 @@ public class TypeParserHelper {
         return processingEnv.getElementUtils().getTypeElement(mirror.toString());
     }
 
+    public boolean directlyImplementsInterface(TypeElement element, Class<?> interfaceClass) {
+        TypeElement targetInterface = processingEnv.getElementUtils().getTypeElement(interfaceClass.getCanonicalName());
+        if (targetInterface == null) {
+            return false;
+        }
+
+        TypeMirror targetErased = processingEnv.getTypeUtils().erasure(targetInterface.asType());
+
+        for (TypeMirror iface : element.getInterfaces()) {
+            if (processingEnv.getTypeUtils().isSameType(processingEnv.getTypeUtils().erasure(iface), targetErased)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 
 }

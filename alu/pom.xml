@@ -35,6 +35,19 @@
             <version>1.9.7</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.0-jre</version>
+        </dependency>
+
+        <dependency>
+            <groupId>co.paralleluniverse</groupId>
+            <artifactId>quasar-core</artifactId>
+            <version>0.8.0</version>
+        </dependency>
+
+
 
     </dependencies>
 
@@ -54,6 +67,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>false</skipTests>
+                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>
 <!--                    <testFailureIgnore>true</testFailureIgnore>-->
 <!--                    <parallel>methods</parallel>-->
 <!--                    <useUnlimitedThreads>true</useUnlimitedThreads>-->

@@ -4,10 +4,7 @@ import org.aspectj.internal.lang.annotation.ajcDeclareAnnotation;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RefRepository {
     private static RefRepository instance;
@@ -25,18 +22,12 @@ public class RefRepository {
     }
 
 
-    public interface ClassHandler {
-        void handle(Class<?> clazz);
-    }
-
-
     void registerStaticRefMethod(Class<?> staticClass, String methodId, Method method) {
 
         if (staticMethods.containsKey(methodId)) {
             System.err.println("Method already registered: " + methodId + "for class" + staticClass.getName());
         } else {
             staticMethods.put(methodId, method);
-
         }
 
     }
@@ -75,6 +66,17 @@ public class RefRepository {
 
         scanClassForMethods(clazz, true);
     }
+
+//    Map<String, Queue<Object>> paramFifos = new HashMap<>();
+//
+//    public void startAutoStaticRef(String staticId){
+//        if (!staticMethods.containsKey(staticId)) {
+//            throw new IllegalArgumentException("Static method not found: " + staticId);
+//        }
+//
+//
+//
+//    }
 
     void scanClassForMethods(Class<?> clazz, boolean isStatic) {
         for (Method method : clazz.getDeclaredMethods()) {
