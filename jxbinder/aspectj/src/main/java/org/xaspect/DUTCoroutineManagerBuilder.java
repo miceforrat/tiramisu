@@ -13,9 +13,6 @@ import javax.lang.model.type.TypeMirror;
 import java.util.concurrent.ExecutionException;
 
 public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
-
-    private String instanceFieldName;
-
     private static final String SERVICE_RUNNER_NAME = "serviceRunner";
 
     private static final String SINGLE_THREAD_EXECUTOR_SERVICE_NAME = "singleThreadExecutorScheduler";
@@ -36,10 +33,10 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
         TypeMirror mirror = DUTBindingTool.getInheritingType(dutManagerElement, DUTManager.class);
         TypeName dutTypeName = TypeName.get(mirror);
         String dutNameRemovePoint = dutTypeName.toString().replace(".", "");
-        instanceFieldName = dutNameRemovePoint + "Instance";
+//        instanceFieldName = dutNameRemovePoint + "Instance";
 
         // 2. 添加字段：DUT 实例
-        FieldSpec dutField = FieldSpec.builder(dutTypeName, instanceFieldName, Modifier.PRIVATE)
+        FieldSpec dutField = FieldSpec.builder(dutTypeName, DUT_INSTANCE_NAME, Modifier.PRIVATE)
                 .build();
         implClassBuilder.addField(dutField);
 
@@ -67,11 +64,11 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
                 .addCode(CodeBlock.builder()
                         .addStatement("$T<?> creator = new $T<>(scheduler, () -> {", Fiber.class, Fiber.class)
                         .indent()
-                        .addStatement("$L = new $T()", instanceFieldName, dutTypeName)
+                        .addStatement("$L = new $T()", DUT_INSTANCE_NAME, dutTypeName)
                         .addStatement("System.err.println(Thread.currentThread().getName())")
-                        .addStatement("$N = $T.getXClockCoroutineManager($N.xclock, $N)", CLOCK_MANAGER_NAME, XClockManagerFactory.class, instanceFieldName, SCHEDULER_NAME)
+                        .addStatement("$N = $T.getXClockCoroutineManager($N.xclock, $N)", CLOCK_MANAGER_NAME, XClockManagerFactory.class, DUT_INSTANCE_NAME, SCHEDULER_NAME)
                         .addStatement("$N = new $T($N, $N)", SERVICE_RUNNER_NAME, ServiceRunner.class, CLOCK_MANAGER_NAME, SCHEDULER_NAME)
-                        .add(defaultUtils(instanceFieldName, dutInfo))
+                        .add(defaultUtils(dutInfo))
                         .unindent()
                         .addStatement("}).start()")
                         .beginControlFlow("try")
@@ -85,17 +82,12 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
     }
 
     @Override
-    public void buildGetDUT(MethodSpec.Builder methodBuilder) {
-        methodBuilder.addStatement("return $N", instanceFieldName);
-    }
-
-    @Override
     public void buildFinish(MethodSpec.Builder methodBuilder) {
         String finisherName = "finisher";
         methodBuilder.addCode(CodeBlock.builder()
                 .addStatement("$T<?> $N = new $T<>(scheduler, () -> {", Fiber.class, finisherName, Fiber.class)
                 .indent()
-                .addStatement("$N.Finish()", instanceFieldName)
+                .addStatement("$N.Finish()", DUT_INSTANCE_NAME)
                 .unindent()
                 .addStatement("}).start()")
                 .beginControlFlow("try")

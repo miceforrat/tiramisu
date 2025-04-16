@@ -93,21 +93,16 @@ public class FieldInitializerAspect {
         }
     }
 
-    private final Map<String, DUTManager<?>> existingManagers = new HashMap<>();
     private DUTManager<?> dutManagerConstruct(Field field){
         Class<?> fieldType = field.getType();
         String implClassName = fieldType.getCanonicalName() + "Impl";
 
-        if (existingManagers.get(implClassName) != null) {
-            return existingManagers.get(implClassName);
-        }
 
         try {
             // 使用反射加载生成的实现类
             Class<?> implClass = Class.forName(implClassName);
             System.out.println(implClassName);
             DUTManager<?> managerImpl = (DUTManager<?>) implClass.getConstructor().newInstance();
-            existingManagers.put(implClassName, managerImpl);
             return managerImpl;
             // 使用构造方法实例化实现类
         } catch (Exception e) {

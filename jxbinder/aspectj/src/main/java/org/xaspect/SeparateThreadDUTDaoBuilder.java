@@ -213,11 +213,10 @@ public class SeparateThreadDUTDaoBuilder implements DUTDaoBuilder {
 
     @Override
     public void buildGetMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
-        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
         String methodName = method.getSimpleName().toString();
         String outerName = getOutBundleByRaw(methodName);
         MethodSpec.Builder afterStepBuilder = MethodSpec.methodBuilder(getAfterStepFunctionNameByRaw(methodName)).addModifiers(Modifier.PUBLIC).returns(TypeName.VOID);
-        List<String> res = constructGetMethod(method, getPrefix, new InstanceDUTTypeInfo(instanceFieldName, null), outerName);
+        List<String> res = constructGetMethod(method, prefix, new InstanceDUTTypeInfo(instanceFieldName, null), outerName, method.getAnnotation(GetMethod.class));
         res.forEach(afterStepBuilder::addCode);
         afterStepBuilder.addCode("this.$N.put(\"" + methodName +"\", $N);\n", OUT_VALUE_BUNDLES, outerName);
 

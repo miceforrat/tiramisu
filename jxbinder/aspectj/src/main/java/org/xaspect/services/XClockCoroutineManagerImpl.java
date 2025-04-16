@@ -9,6 +9,7 @@ import com.xspcomm.XClock;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class XClockCoroutineManagerImpl implements XClockCoroutineManager {
     private XClock clock;
@@ -108,6 +109,13 @@ public class XClockCoroutineManagerImpl implements XClockCoroutineManager {
         this.currentFiber.join();
     }
 
+    @Override
+    @Suspendable
+    public void awaitCond(Supplier<Boolean> condition) {
+        while (!condition.get()) {
+            this.step();
+        }
+    }
 
     //    @Override
 //    public void createCond(String condId, Supplier<Boolean> condition) {

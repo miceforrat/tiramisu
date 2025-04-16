@@ -9,4 +9,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface GetMethod {
     String prefix() default "";
+    boolean isPin();
+    boolean coveringUnsigned() default false;
+    boolean unsigned() default true;
 }

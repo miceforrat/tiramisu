@@ -14,9 +14,8 @@ public @interface AutoDUT {
 //    String id() default ""; // support for multiple examples
     String clockName() default "";
     String resetName() default "";
-    ConcurrentSupport concurrentSupport() default ConcurrentSupport.NORMAL;
-    int waiterCnt() default 1;
-
+    long resetValue() default 1;
+    long banResetValue() default 0;
     String waveFileName() default "";
 
     String covFileName() default "";

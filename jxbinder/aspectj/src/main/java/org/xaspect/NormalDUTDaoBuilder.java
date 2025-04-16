@@ -112,9 +112,9 @@ public class NormalDUTDaoBuilder implements DUTDaoBuilder {
 
     @Override
     public void buildGetMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
-        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
+//        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
         String outerName = "outBundle";
-        List<String> res = constructGetMethod(method, getPrefix, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName);
+        List<String> res = constructGetMethod(method, prefix,  new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName, method.getAnnotation(GetMethod.class));
         res.forEach(methodBuilder::addCode);
         methodBuilder.addCode("return " + outerName + ";\n");
     }

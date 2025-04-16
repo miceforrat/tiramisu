@@ -12,8 +12,7 @@ public interface ALUDutDao
     @PostMethod
     void postIn(ALUIO in);
 
-    @GetMethod(prefix = "alu_out")
-    @ReturnsPin
+    @GetMethod(prefix = "alu_out", isPin = true)
     int getOut();
 
     @PostMethod

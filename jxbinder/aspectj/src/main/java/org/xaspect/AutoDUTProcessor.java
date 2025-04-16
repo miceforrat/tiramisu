@@ -124,7 +124,10 @@ public class AutoDUTProcessor extends AbstractProcessor {
             }
 //            System.err.println(methodName);
             // 构造方法体
-            if (methodName.equals("finish")) {
+            if (method.getAnnotation(AutoDUTDao.class) != null) {
+                String clsName = processMethodWithAutoDUTDao(method);
+                builder.buildGetAutoDUTDao(implClassBuilder, clsName, methodBuilder);
+            } else if (methodName.equals("finish")) {
                 builder.buildFinish(methodBuilder);
             } else if (methodName.equals("getDUT")) {
                 builder.buildGetDUT(methodBuilder);
@@ -153,20 +156,36 @@ public class AutoDUTProcessor extends AbstractProcessor {
         }
     }
 
-    private void processFieldWithAutoDUTDao(VariableElement field) {
-//        String fieldName = field.getSimpleName().toString();
+    private void processFieldWithAutoDUTDao(VariableElement field){
         TypeElement fieldType = elementUtils.getTypeElement(field.asType().toString());
+
+        AutoDUTDao autoDUTDao = field.getAnnotation(AutoDUTDao.class);
+        processFieldWithAutoDUTDao(fieldType, autoDUTDao);
+    }
+
+    private String processMethodWithAutoDUTDao(ExecutableElement method){
+        TypeElement retVal = elementUtils.getTypeElement(method.getReturnType().toString());
+        AutoDUTDao autoDUTDao = method.getAnnotation(AutoDUTDao.class);
+        return processFieldWithAutoDUTDao(retVal, autoDUTDao);
+    }
+
+    private String processFieldWithAutoDUTDao(TypeElement fieldType, AutoDUTDao autoDUTDao) {
+//        String fieldName = field.getSimpleName().toString();
         String packageName = processingEnv.getElementUtils().getPackageOf(fieldType).getQualifiedName().toString();
 //        System.out.println(packageName);
         // 获取字段类型和注解信息
-        AutoDUTDao autoDUTDao = field.getAnnotation(AutoDUTDao.class);
         String prefix = autoDUTDao.value();
 
         // 生成实现类名
-        String implClassName = fieldType.getSimpleName() + "ImplWithPrefix" + prefix;
+        String implClassName = fieldType.getSimpleName() + "ImplWithPrefix";
+        if (prefix != null && !prefix.isEmpty()) {
+            int hashRes = prefix.hashCode();
+            implClassName += Integer.toUnsignedString(hashRes).charAt(0) + Integer.toString(hashRes).substring(1);
+        }
+        String qualifiedName = packageName + "." + implClassName;
         if (doesClassExist(packageName, implClassName)){
             System.err.println("Class " + implClassName + " already exists, skipping.");
-            return;
+            return qualifiedName;
         }
         AnnotationSpec annotation = AnnotationSpec.builder(AspectIgnore.class)
                 .build();
@@ -197,6 +216,8 @@ public class AutoDUTProcessor extends AbstractProcessor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        fullNameSet.add(qualifiedName);
+        return qualifiedName;
 
     }
 
@@ -309,17 +330,20 @@ public class AutoDUTProcessor extends AbstractProcessor {
 //        return result;
 //    }
 
+    Set<String> fullNameSet = new HashSet<>();
+
     private boolean doesClassExist(String packageName, String className) {
-        String resourcePath = packageName.replace('.', '/') + "/" + className + ".java";
-        try {
-            processingEnv.getFiler()
-                    .getResource(StandardLocation.SOURCE_OUTPUT, "", resourcePath)
-                    .openInputStream() // 💥 实际读取才会抛错
-                    .close(); // 确实存在时能打开关闭
+        String fullName = packageName + "." + className;
+        if (fullNameSet.contains(fullName)) {
             return true;
-        } catch (IOException e) {
-            return false;
         }
+
+        if (processingEnv.getElementUtils().getTypeElement(fullName) != null){
+            fullNameSet.add(fullName);
+            return true;
+        }
+        return false;
+
     }
     
 

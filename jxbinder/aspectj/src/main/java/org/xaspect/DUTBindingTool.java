@@ -21,14 +21,14 @@ public class DUTBindingTool {
 
     static ProcessingEnvironment processingEnv;
 
-    static List<String> constructGetMethod(ExecutableElement method, String prefix, InstanceDUTTypeInfo instanceFieldType, String outerName){
-        String outputPrefix = prefix;
+    static List<String> constructGetMethod(ExecutableElement method, String prefix, InstanceDUTTypeInfo instanceFieldType, String outerName, GetMethod getMethod){
+        String outputPrefix = prefix + getMethod.prefix();
         List<String> ret = new ArrayList<>();
 
         IOParameters ios = new IOParameters();
         ios.isIn = false;
-        AnnotationMirror outerPinAnnotation = getAnnotation(method, ReturnsPin.class);
-        AnnotationMirror outerBundleAnnotation =  getAnnotation(method, ReturnsBundle.class);
+//        AnnotationMirror outerPinAnnotation = getAnnotation(method, ReturnsPin.class);
+//        AnnotationMirror outerBundleAnnotation =  getAnnotation(method, ReturnsBundle.class);
 //        Annotation outerBundleAnnotation =  getAnnotationFromType(method.getReturnType(), OutBundle.class);
 //        if (outerBundleAnnotation != null) {
 //            OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
@@ -38,19 +38,15 @@ public class DUTBindingTool {
 //        } else if (outerPinAnnotation != null){
 //            outputPrefix += ((Pin) outerPinAnnotation).value();
 //        }
-        if (outerBundleAnnotation != null) {
-            Boolean coveringUnsigned = (Boolean) getAnnotationValue(outerBundleAnnotation, "coveringUnsigned");
-            Boolean unsigned = (Boolean) getAnnotationValue(outerBundleAnnotation, "unsigned");
+        ios.isPin = getMethod.isPin();
+        if (!ios.isPin) {
+            ios.coveringUnsigned =getMethod.coveringUnsigned();
+            ios.unsigned = getMethod.unsigned();
 
-            if (coveringUnsigned != null) ios.coveringUnsigned = coveringUnsigned;
-            if (unsigned != null) ios.unsigned = unsigned;
-
-        } else if (outerPinAnnotation != null) {
-            Boolean unsigned = (Boolean) getAnnotationValue(outerPinAnnotation, "unsigned");
-            if (unsigned != null) ios.unsigned = unsigned;
+        } else {
+            ios.unsigned = getMethod.unsigned();
         }
 
-        ios.isPin = outerPinAnnotation != null;
 
 //        Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
         String typeName = method.getReturnType().toString();
@@ -155,7 +151,8 @@ public class DUTBindingTool {
             rets.add(constructAssignmentWithCheck(fieldPrefix, typeMirror, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
         } else {
             // 如果元素是类或接口，获取其字段
-
+            System.err.println(dataTypeElement + "???");
+            System.err.println(element.getSimpleName() + "!!!");
             Map<String, VariableElement> allVars = TypeParserHelper.getInstance().collectAllFields(dataTypeElement);
             for (VariableElement enclosedElement : allVars.values()) {
                 VariableElement field = enclosedElement;
