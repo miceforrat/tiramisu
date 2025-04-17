@@ -67,7 +67,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>false</skipTests>
-                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>
+<!--                    <argLine>-javaagent:${project.basedir}/quasar-core-0.8.0.jar</argLine>-->
+                    <argLine>-javaagent:${user.home}/.m2/repository/co/paralleluniverse/quasar-core/0.8.0/quasar-core-0.8.0.jar</argLine>
 <!--                    <testFailureIgnore>true</testFailureIgnore>-->
 <!--                    <parallel>methods</parallel>-->
 <!--                    <useUnlimitedThreads>true</useUnlimitedThreads>-->

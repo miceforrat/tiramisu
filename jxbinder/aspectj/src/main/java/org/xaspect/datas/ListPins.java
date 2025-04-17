@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 public @interface ListPins {
     String prefix() default "";
     int start() default 0;
-    int length() default 0;
+    int maxIdx();
     boolean unsigned() default false;
 //    int[] escapes() default {};
 }

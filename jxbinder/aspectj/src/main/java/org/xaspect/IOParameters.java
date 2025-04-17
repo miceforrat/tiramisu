@@ -7,6 +7,7 @@ class IOParameters {
     boolean coveringUnsigned = false;
     boolean isPin = false;
     boolean isSon = false;
+    int arrIdx = -1;
 
 
     public IOParameters copy() {
@@ -16,6 +17,7 @@ class IOParameters {
         cloned.unsigned = unsigned;
         cloned.isPin = isPin;
         cloned.isSon = isSon;
+        cloned.arrIdx = arrIdx;
         return cloned;
     }
 }

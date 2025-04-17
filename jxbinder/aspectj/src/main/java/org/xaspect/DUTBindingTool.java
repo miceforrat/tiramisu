@@ -1,5 +1,6 @@
 package org.xaspect;
 
+import com.squareup.javapoet.CodeBlock;
 import com.xspcomm.XData;
 import org.xaspect.datas.*;
 
@@ -14,6 +15,7 @@ import javax.lang.model.util.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.xaspect.TypeParserHelper.*;
 
@@ -148,7 +150,7 @@ public class DUTBindingTool {
 //        System.err.println("is pin?" + ioParameters.isPin);
 
         if (ioParameters.isPin) {
-            rets.add(constructAssignmentWithCheck(fieldPrefix, typeMirror, prefix, ioParameters.isIn, ioParameters.unsigned, insInfo));
+            rets.add(constructAssignmentWithCheck(fieldPrefix, typeMirror, prefix, ioParameters, insInfo));
         } else {
             // 如果元素是类或接口，获取其字段
             System.err.println(dataTypeElement + "???");
@@ -176,7 +178,6 @@ public class DUTBindingTool {
             if (pinName.isEmpty()) {
                 pinName = varName;
             }
-
             String dataWrapperVar = fieldPrefix + "." + varName;
             String trueInsPin = prefix + pinName;
             IOParameters subIOS = ioParameters.copy();
@@ -193,6 +194,41 @@ public class DUTBindingTool {
             rets.addAll(subreses);
         } else if (field.getAnnotation(ListPins.class) != null) {
             // 处理 ListPins 注解
+            ListPins listPinAnnotation = field.getAnnotation(ListPins.class);
+            int start = listPinAnnotation.start();
+            boolean allSignalsUnsigned = listPinAnnotation.unsigned();
+            String arrPrefix = prefix + listPinAnnotation.prefix();
+            if (start < 0){
+                System.err.println("start smaller than 0 in @" + ListPins.class.getSimpleName() + "of field " + field.getSimpleName());
+                start = 0;
+            }
+            int maxIdx = listPinAnnotation.maxIdx();
+            if (maxIdx < start){
+                throw new RuntimeException("max smaller than start in @" + ListPins.class.getSimpleName() + " of field " + field.getSimpleName());
+            }
+
+            Optional<TypeMirror> getListType = TypeParserHelper.getInstance().getListElementType(field);
+            if (!getListType.isPresent()) {
+                throw new RuntimeException("non list type decorated with @" + ListPins.class.getSimpleName());
+            }
+            TypeMirror listType = getListType.get();
+            if (!ioParameters.isIn){
+                rets.add(CodeBlock.builder().addStatement("$L.$N = new $T<>($L)", fieldPrefix, field.getSimpleName(), ArrayList.class, maxIdx).build().toString());
+            }
+
+            String arrFullName = fieldPrefix + "." + field.getSimpleName();
+
+            for (int i = start; i <= maxIdx; i++) {
+                IOParameters subIOS = ioParameters.copy();
+                String trueArrElementPin = arrPrefix + i;
+                subIOS.isSon = true;
+                subIOS.isPin = true;
+                subIOS.unsigned = allSignalsUnsigned;
+                subIOS.arrIdx = i;
+                rets.addAll(constructIO(trueArrElementPin, field, insInfo, arrFullName, subIOS));
+            }
+
+
         }
     }
     private static boolean isInteger(TypeMirror typeMirror) {
@@ -224,13 +260,13 @@ public class DUTBindingTool {
         return "";
     }
 
-    private static String constructAssignmentWithCheck(String fieldFullName, TypeMirror fieldType, String pinNamePattern, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
+    private static String constructAssignmentWithCheck(String fieldFullName, TypeMirror fieldType, String pinNamePattern, IOParameters ios, InstanceDUTTypeInfo insInfo) {
         if (insInfo.getFields().containsKey(pinNamePattern)){
             //存在这个变量，而且是XData，就不需要后续的正则检查
             String pinFullName = insInfo.getInstanceName() + "." + pinNamePattern;
 
             if (mirrorEqualsClass(insInfo.getFields().get(pinNamePattern).asType(), XData.class)) {
-                return constructSimpleAssignment(pinFullName, fieldFullName, isIn, unsigned, fieldType);
+                return constructSimpleAssignment(pinFullName, fieldFullName, ios, fieldType);
             }
         } else {
             boolean generated = false;
@@ -248,9 +284,9 @@ public class DUTBindingTool {
                     generated = true;
                     String pinFullName = insInfo.getInstanceName() + "." + entry.getKey();
 
-                    res = constructSimpleAssignment(pinFullName, fieldFullName, isIn, unsigned, fieldType);
+                    res = constructSimpleAssignment(pinFullName, fieldFullName, ios, fieldType);
                 } else {
-                    System.err.println("Different pins match the same pattern: " + pinNamePattern + ", please check!!!");
+                    System.err.println("\u001B[31mDifferent pins match the same pattern: " + pinNamePattern + ", please check!!! Now we just ignoring those being not the first so that the variable won't connect\u001B[0m");
                 }
             }
 
@@ -268,12 +304,23 @@ public class DUTBindingTool {
         return typeMirror.toString().equals(clazz.getCanonicalName());
     }
 
-    private static String constructSimpleAssignment(String pinFullName, String fieldFullName, boolean isIn, boolean unsigned, TypeMirror fieldType) {
-        if (isIn){
-            return pinFullName + ".Set(" + fieldFullName + ");\n";
+    private static String constructSimpleAssignment(String pinFullName, String fieldFullName, IOParameters ios, TypeMirror fieldType) {
+        boolean isArr = ios.arrIdx >= 0;
+        if (ios.isIn) {
+            if (!isArr) {
+                return String.format("%s.Set(%s);\n", pinFullName, fieldFullName);
+            } else {
+                return String.format("%s.Set(%s.get(%s));\n", pinFullName, fieldFullName, ios.arrIdx);
+            }
         } else {
-            String signedGet = "." + (unsigned? "U()": "S()");
-            return fieldFullName + " = " + pinFullName + getBasicTypeValStr(fieldType, signedGet) + ";\n";
+            String signedGet = "." + (ios.unsigned ? "U()" : "S()");
+            String basicGet = getBasicTypeValStr(fieldType, signedGet);
+            if (!isArr) {
+                return String.format("%s = %s%s;\n", fieldFullName, pinFullName, basicGet);
+            } else {
+                return String.format("%s.set(%s, %s%s);\n", fieldFullName, ios.arrIdx, pinFullName, basicGet);
+            }
+
         }
     }
 

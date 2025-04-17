@@ -1,4 +1,5 @@
 package org.example;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.*;
 import org.xaspect.datas.Pin;
 import org.xaspect.services.ServiceRunner;
@@ -31,12 +32,13 @@ public class ALUTest {
 //        coverageManager = CoverageManager.getCoverageManager("ALU");
 //        alu = new ALUWrapper();
 
-        RefRepository.getInstance().submitRefModel("a", new ALURef());
+//        RefRepository.getInstance().submitRefModel("a", new ALURef());
     }
 
     @Before
     public void setUp() throws Exception {
         alu = new ALUWrapper();
+        RefRepository.getInstance().attachModelWithDUT(new ALURef(), alu);
 
 //        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
 //

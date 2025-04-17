@@ -74,7 +74,7 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
                         .beginControlFlow("try")
                         .addStatement("creator.join()")
                         .nextControlFlow("catch ($T | $T e)", ExecutionException.class, InterruptedException.class)
-                        .addStatement("throw new RuntimeException(e)")
+//                        .addStatement("throw new RuntimeException(e)")
                         .endControlFlow()
                         .build())
                 .build();

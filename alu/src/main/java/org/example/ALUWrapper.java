@@ -44,7 +44,7 @@ public class ALUWrapper {
     }
 
 //    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
-    @RefWithInsMethod(modelId = "a", methodId = "alu")
+    @RefWithInsMethod(methodId = "alu")
     public int process(ALUIO in) {
 
         aluDutDao.setAb(in.a, in.b);

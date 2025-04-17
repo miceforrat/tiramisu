@@ -27,7 +27,7 @@ public interface DUTManagerBuilder {
 //    void buildAddSuspendableRunnable(MethodSpec.Builder methodBuilder);
 
     default void buildGetAutoDUTDao(TypeSpec.Builder implClassBuilder, String dutClsName, MethodSpec.Builder builder) {
-        String daoFieldName = dutClsName.replace('.', '\0') + "dao";
+        String daoFieldName = dutClsName.replace('.', '_') + "dao";
 
         // 1. 构造 ClassName 类型
         ClassName dutType = ClassName.bestGuess(dutClsName);

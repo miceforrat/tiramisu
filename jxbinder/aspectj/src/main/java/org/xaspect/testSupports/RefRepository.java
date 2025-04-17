@@ -11,7 +11,7 @@ public class RefRepository {
     private final Map<String, Method> staticMethods = new HashMap<>();
     private final Set<Class<?>> scannedStaticClasses = new HashSet<>();
     private final Map<Class<?>, Map<String, Method>> instanceMethods = new HashMap<>();
-    private final Map<String, Object> refModels = new HashMap<>();
+    private final Map<Object, Map<String, Object>> refModelsToDUTObjs = new HashMap<>();
 
 
     public static RefRepository getInstance() {
@@ -20,7 +20,6 @@ public class RefRepository {
         }
         return instance;
     }
-
 
     void registerStaticRefMethod(Class<?> staticClass, String methodId, Method method) {
 
@@ -44,19 +43,42 @@ public class RefRepository {
 
     }
 
-    public <T> void submitRefModel(String modelId, T model) {
-        if (refModels.containsKey(modelId)) {
-            System.err.println("Model already registered: " + modelId);
-        } else {
-            this.refModels.put(modelId, model);
+    public void attachModelWithDUT(Object model, Object dut){
+        if (!refModelsToDUTObjs.containsKey(dut)) {
+            refModelsToDUTObjs.put(dut, new HashMap<>());
+        }
+        Class<?> clazz = model.getClass();
+        if (!scannedStaticClasses.contains(clazz)) {
+            scannedStaticClasses.add(clazz);
+            scanClassForMethods(clazz, false);
+        }
+        for (Method method: dut.getClass().getDeclaredMethods()) {
+            if (method.getAnnotation(RefWithInsMethod.class) != null) {
+                String toRefMethodId = method.getAnnotation(RefWithInsMethod.class).methodId();
+                if (refModelsToDUTObjs.get(dut).containsKey(toRefMethodId)) {
+                    System.err.println("Method already registered: " + toRefMethodId + "for class" + dut.getClass().getName());
+                } else {
+                    if (instanceMethods.get(clazz).containsKey(toRefMethodId)) {
+                        refModelsToDUTObjs.get(dut).put(toRefMethodId, model);
+                    }
+                }
+            }
         }
 
-        Class<?> clazz = model.getClass();
-        if (instanceMethods.containsKey(clazz)) {
-            return;
-        }
-        scanClassForMethods(clazz, false);
     }
+
+//    public <T> void submitRefModel(String modelId, T model) {
+//        if (refModels.containsKey(modelId)) {
+//            System.err.println("Model already registered: " + modelId);
+//        } else {
+//            this.refModels.put(modelId, model);
+//        }
+//        Class<?> clazz = model.getClass();
+//        if (instanceMethods.containsKey(clazz)) {
+//            return;
+//        }
+//        scanClassForMethods(clazz, false);
+//    }
 
     public void submitRefClass(Class<?> clazz){
         if (scannedStaticClasses.contains(clazz)) {
@@ -88,6 +110,9 @@ public class RefRepository {
                 System.err.println("@RefWithStaticMethod method found: " + method.getName());
                 StaticRefMethod staticRefMethod = method.getAnnotation(StaticRefMethod.class);
                 String staticMethodId = staticRefMethod.id();
+                if (staticMethodId.isEmpty()){
+                    throw new RuntimeException("@RefWithStaticMethod.id() is empty!");
+                }
                 method.setAccessible(true);
                 RefRepository.getInstance().registerStaticRefMethod(clazz, staticMethodId, method);
             } else if ((!isStatic) && method.isAnnotationPresent(InsRefMethod.class)){
@@ -97,6 +122,9 @@ public class RefRepository {
                 System.err.println("@RefWithInsMethod found: " + method.getName());
                 InsRefMethod insRefMethod = method.getAnnotation(InsRefMethod.class);
                 String insMethodId = insRefMethod.id();
+                if (insMethodId.isEmpty()){
+                    throw new RuntimeException("@RefWithInsMethod.id() is empty!");
+                }
                 method.setAccessible(true);
                 RefRepository.getInstance().registerInstanceRefMethod(clazz, insMethodId, method);
             }
@@ -112,26 +140,22 @@ public class RefRepository {
         return staticMethods.get(methodId);
     }
 
-    InstanceWithMethod getInstanceWithMethod(String modelId, String methodId) {
-        Object model = refModels.get(modelId);
-        if (model == null) {
-            logNonExistenceModel(modelId);
-            return null;
+    InstanceWithMethod getInstanceWithMethod(Object dut, String methodId) {
+        if (!refModelsToDUTObjs.containsKey(dut)) {
+            throw new RuntimeException("object " + dut + "does not register to any ref model!");
         }
+
+        if (!refModelsToDUTObjs.get(dut).containsKey(methodId)) {
+            throw new RuntimeException("object " + dut + " with method id " + methodId + " does not register to any ref model's ref method!");
+        }
+
+        Object model = refModelsToDUTObjs.get(dut).get(methodId);
 
         Class<?> clazz = model.getClass();
-        Map<String, Method> methods = instanceMethods.get(clazz);
-        if (methods == null) {
-            logNonExistenceModel(modelId);
-            return null;
-        }
+        assert instanceMethods.containsKey(clazz);
+        assert instanceMethods.get(clazz).containsKey(methodId);
 
-        if (!methods.containsKey(methodId)) {
-            logNonExistenceInstanceMethod(modelId, methodId);
-            return null;
-        }
-        Method method = methods.get(methodId);
-
+        Method method = instanceMethods.get(clazz).get(methodId);
         return new InstanceWithMethod(model, method);
     }
 

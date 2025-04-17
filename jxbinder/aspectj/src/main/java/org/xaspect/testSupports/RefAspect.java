@@ -52,14 +52,14 @@ public class RefAspect {
     @Around("@annotation(refWithInsMethod)")
     public Object around(ProceedingJoinPoint pjp, RefWithInsMethod refWithInsMethod) throws Throwable {
         String refId = refWithInsMethod.methodId();
-        String modelId = refWithInsMethod.modelId();
-        RefRepository.InstanceWithMethod insWithMethod = RefRepository.getInstance().getInstanceWithMethod(modelId, refId);
+        Object dut = pjp.getTarget();
+        RefRepository.InstanceWithMethod insWithMethod = RefRepository.getInstance().getInstanceWithMethod(dut, refId);
         if (insWithMethod != null && insWithMethod.method != null && insWithMethod.instance != null) {
             Class<?>[] refParameterTypes = insWithMethod.method.getParameterTypes();
             MethodSignature methodSignature = (MethodSignature) pjp.getSignature();
             Class<?>[] realParamTypes = methodSignature.getParameterTypes();
 
-            checkArgs(refParameterTypes, realParamTypes, "method " + refId + " in model " + modelId);
+            checkArgs(refParameterTypes, realParamTypes, "method " + refId + " in model " + dut);
 
             Object[] args = pjp.getArgs();
 

@@ -8,6 +8,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.Trees;
+import jdk.dynalink.linker.support.TypeUtilities;
 
 import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -222,5 +223,23 @@ public class TypeParserHelper {
         return false;
     }
 
+    public Optional<TypeMirror> getListElementType(VariableElement field) {
+
+        TypeMirror fieldType = field.asType();
+        TypeMirror listType = processingEnv.getElementUtils().getTypeElement("java.util.List").asType();
+
+        Types typeUtils = processingEnv.getTypeUtils();
+        // 判断是否是 List 的子类型
+        if (typeUtils.isAssignable(typeUtils.erasure(fieldType), typeUtils.erasure(listType))) {
+            if (fieldType instanceof DeclaredType) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)fieldType).getTypeArguments();
+                if (!typeArgs.isEmpty()) {
+                    return Optional.of(typeArgs.get(0)); // 返回 List<T> 中的 T
+                }
+            }
+        }
+
+        return Optional.empty(); // 不是 List，或者没有泛型参数
+    }
 
 }
