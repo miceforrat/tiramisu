@@ -35,8 +35,8 @@ public class FIFOTest {
             boolean write = (cur == EMPTY || (cur < FULL && choice > 0));
             int rand = random.nextInt(256);
             if (write) {
-                FIFOWriteRet expect = fifo.write(rand);
-                FIFOWriteRet actual = ref.write(rand);
+                CtrlInfos expect = fifo.write(rand);
+                CtrlInfos actual = ref.write(rand);
                 assertEquals(expect, actual);
                 cur++;
             } else {
@@ -52,8 +52,8 @@ public class FIFOTest {
     private static class FIFORef{
         private final Queue<Integer> queue = new ArrayDeque<>();
 
-        public FIFOWriteRet write(int in){
-            FIFOWriteRet ret = new FIFOWriteRet(queue.isEmpty()?1:0, queue.size() == FULL? 1: 0);
+        public CtrlInfos write(int in){
+            CtrlInfos ret = new CtrlInfos(queue.isEmpty()?1:0, queue.size() == FULL? 1: 0);
             if (queue.size() < FULL){
                 queue.offer(in);
             }

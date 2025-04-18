@@ -216,8 +216,9 @@ public class SeparateThreadDUTDaoBuilder implements DUTDaoBuilder {
         String methodName = method.getSimpleName().toString();
         String outerName = getOutBundleByRaw(methodName);
         MethodSpec.Builder afterStepBuilder = MethodSpec.methodBuilder(getAfterStepFunctionNameByRaw(methodName)).addModifiers(Modifier.PUBLIC).returns(TypeName.VOID);
-        List<String> res = constructGetMethod(method, prefix, new InstanceDUTTypeInfo(instanceFieldName, null), outerName, method.getAnnotation(GetMethod.class));
-        res.forEach(afterStepBuilder::addCode);
+        afterStepBuilder.addCode(constructGetMethod(method, prefix, new InstanceDUTTypeInfo(instanceFieldName, null), outerName, method.getAnnotation(GetMethod.class)));
+//        List<String> res = constructGetMethod(method, prefix, new InstanceDUTTypeInfo(instanceFieldName, null), outerName, method.getAnnotation(GetMethod.class));
+//        res.forEach(afterStepBuilder::addCode);
         afterStepBuilder.addCode("this.$N.put(\"" + methodName +"\", $N);\n", OUT_VALUE_BUNDLES, outerName);
 
         outFunctionNames.put(methodName, afterStepBuilder.build());
@@ -252,7 +253,8 @@ public class SeparateThreadDUTDaoBuilder implements DUTDaoBuilder {
             String trueBundleName = inputBundleName + paramIdx;
 
             methodBuilder.addCode("$T $N = ($T) paramMap.get(" + paramIdx + ");\n", paramTypeName, trueBundleName, paramTypeName);
-            constructOneParamBinding(postPrefix, param, trueBundleName, new InstanceDUTTypeInfo(instanceFieldName, null)).forEach(methodBuilder::addCode);
+            methodBuilder.addCode(constructOneParamBinding(postPrefix, param, trueBundleName, new InstanceDUTTypeInfo(instanceFieldName, null)));
+//            constructOneParamBinding(postPrefix, param, trueBundleName, new InstanceDUTTypeInfo(instanceFieldName, null)).forEach(methodBuilder::addCode);
             paramIdx++;
         }
         methodBuilder.addCode("});\n}");

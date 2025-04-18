@@ -9,6 +9,7 @@ public interface UTCounterDao extends DUTDao<UT_Counter> {
     @PostMethod
     void setRst(@Pin int rst);
 
-    @GetMethod(prefix = "count", isPin = true)
+    @GetMethod(prefix = "count")
+    @Pin
     int getCnt();
 }

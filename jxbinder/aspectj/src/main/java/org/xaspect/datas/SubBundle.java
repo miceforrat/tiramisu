@@ -9,4 +9,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface SubBundle {
     String value() default "";
+    boolean coveringUnsigned() default false;
+    boolean unsigned() default true;
 }

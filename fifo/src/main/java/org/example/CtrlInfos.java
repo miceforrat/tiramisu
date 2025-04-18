@@ -2,24 +2,24 @@ package org.example;
 
 import org.xaspect.datas.Pin;
 
-public class FIFOWriteRet {
+public class CtrlInfos {
     @Pin
     int empty;
     @Pin
     int full;
 
-    FIFOWriteRet() {
+    CtrlInfos() {
     }
 
-    FIFOWriteRet(int empty, int full) {
+    CtrlInfos(int empty, int full) {
         this.empty = empty;
         this.full = full;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof FIFOWriteRet) {
-            FIFOWriteRet other = (FIFOWriteRet) obj;
+        if (obj instanceof CtrlInfos) {
+            CtrlInfos other = (CtrlInfos) obj;
             return empty == other.empty && full == other.full;
         }
         return false;

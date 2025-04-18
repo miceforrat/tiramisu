@@ -30,7 +30,7 @@ public class FIFOAgent {
         fifo.Step();
     }
 
-    public FIFOWriteRet write(int wdata){
+    public CtrlInfos write(int wdata){
         fifoDao.setWData(wdata);
         fifoDao.setWrEn(1);
         fifo.Step();

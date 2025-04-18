@@ -1,9 +1,6 @@
 package org.xaspect;
 
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -25,7 +22,7 @@ public class NormalDUTDaoBuilder implements DUTDaoBuilder {
 
     @Override
     public void buildBind(MethodSpec.Builder methodBuilder, ExecutableElement method) {
-        methodBuilder.addStatement("this.$N = $N;\n", instanceFieldName, method.getParameters().get(0).getSimpleName());
+        methodBuilder.addStatement("this.$N = $N", instanceFieldName, method.getParameters().get(0).getSimpleName());
     }
 
     @Override
@@ -114,8 +111,9 @@ public class NormalDUTDaoBuilder implements DUTDaoBuilder {
     public void buildGetMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
 //        String getPrefix = prefix + method.getAnnotation(GetMethod.class).prefix();
         String outerName = "outBundle";
-        List<String> res = constructGetMethod(method, prefix,  new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName, method.getAnnotation(GetMethod.class));
-        res.forEach(methodBuilder::addCode);
+        methodBuilder.addCode(constructGetMethod(method, prefix,  new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName, method.getAnnotation(GetMethod.class)));
+//        List<String> res = constructGetMethod(method, prefix,  new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement), outerName, method.getAnnotation(GetMethod.class));
+//        res.forEach(methodBuilder::addCode);
         methodBuilder.addCode("return " + outerName + ";\n");
     }
 
@@ -123,15 +121,15 @@ public class NormalDUTDaoBuilder implements DUTDaoBuilder {
     @Override
     public void buildPostMethod(MethodSpec.Builder methodBuilder, String prefix, ExecutableElement method) {
         String postPrefix = prefix + method.getAnnotation(PostMethod.class).prefix();
-        List<String> res = constructPostMethod(method, postPrefix);
+        List<CodeBlock> res = constructPostMethod(method, postPrefix);
         res.forEach(methodBuilder::addCode);
 //        constructPostMethod(method, postPrefix).forEach(methodBuilder::addCode);
     }
 
 
-    private List<String> constructPostMethod(ExecutableElement method, String prefix) {
+    private List<CodeBlock> constructPostMethod(ExecutableElement method, String prefix) {
         List<? extends VariableElement> params = method.getParameters();
-        List<String> ret = new ArrayList<>();
+        List<CodeBlock> ret = new ArrayList<>();
         for (VariableElement param : params) {
             //获取公用前缀
             String inputBundleName = param.getSimpleName().toString();
@@ -160,7 +158,7 @@ public class NormalDUTDaoBuilder implements DUTDaoBuilder {
 //            }
 //
 //            List<String> inputsAssigns = constructIO(inputPrefix, getClassFromTypeMirror(param.asType()), instanceFieldName, inputBundleName, ios);
-            ret.addAll(constructOneParamBinding(prefix, param, inputBundleName, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement)));
+            ret.add(constructOneParamBinding(prefix, param, inputBundleName, new InstanceDUTTypeInfo(instanceFieldName, instanceTypeElement)));
 
         }
 //        System.out.println("to add:" + ret);

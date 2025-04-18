@@ -210,7 +210,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
         // 写入生成的类到相同包路径
         JavaFile javaFile = JavaFile.builder(packageName, classBuilder.build(implClassBuilder))
                 .build();
-
+        System.err.println(javaFile);
         try {
             javaFile.writeTo(filer);
         } catch (IOException e) {

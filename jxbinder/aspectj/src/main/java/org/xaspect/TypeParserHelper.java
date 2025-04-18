@@ -34,31 +34,48 @@ public class TypeParserHelper {
         return instance;
     }
 
-    public static @Nullable AnnotationMirror getAnnotation(Element element, Class<?> annotationClass) {
+    public Optional<AnnotationMirror> getAnnotation(Element element, Class<?> annotationClass) {
         // 先从 Element 上找（标准 APT 兼容）
 //        System.err.println(element.getAnnotationMirrors().size());
-        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+        return getAnnotation(element.getAnnotationMirrors(), annotationClass);
 
+    }
+
+    public Optional<AnnotationMirror> getAnnotation(List<? extends AnnotationMirror> mirrors, Class<?> annotationClass) {
+        for (AnnotationMirror annotationMirror : mirrors) {
             if (annotationMirror.getAnnotationType().toString().equals(annotationClass.getCanonicalName())) {
-                return annotationMirror;
+                return Optional.of(annotationMirror);
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<AnnotationMirror> findAnnotationWithMetaValueInSet(List<? extends AnnotationMirror> annotations, Class<?> metaAnnotationClass,
+            String metaMemberName, String allowedValue) {
+        for (AnnotationMirror ann : annotations) {
+            List<? extends AnnotationMirror> metaAnns = ann.getAnnotationType().asElement().getAnnotationMirrors();
+            for (AnnotationMirror meta : metaAnns) {
+                if (!meta.getAnnotationType().toString().equals(metaAnnotationClass.getCanonicalName())) {
+                    continue;
+                }
+
+                for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : meta.getElementValues().entrySet()) {
+                    if (e.getKey().getSimpleName().contentEquals(metaMemberName)) {
+                        Object rawValue = e.getValue().getValue();
+                        if (rawValue != null && allowedValue.equals(rawValue.toString())) {
+                            return Optional.of(ann); // 找到匹配的注解
+                        }
+                    }
+                }
             }
         }
 
-        // 如果没找到，再尝试从 type（ECJ 兼容场景）
-        // 注意：这部分在 javac 下基本没用
-//        if (type instanceof DeclaredType) {
-//            Element typeElement = ((DeclaredType) type).asElement();
-//            for (AnnotationMirror annotationMirror : typeElement.getAnnotationMirrors()) {
-//                if (annotationMirror.getAnnotationType().toString().equals(annotationClass.getCanonicalName())) {
-//                    return annotationMirror;
-//                }
-//            }
-//        }
-
-        return null;
+        return Optional.empty();
     }
 
-    public static @Nullable Object getAnnotationValue(AnnotationMirror mirror, String key) {
+
+
+    public @Nullable Object getAnnotationValue(AnnotationMirror mirror, String key) {
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry :
                 mirror.getElementValues().entrySet()) {
             if (entry.getKey().getSimpleName().toString().equals(key)) {
@@ -223,16 +240,14 @@ public class TypeParserHelper {
         return false;
     }
 
-    public Optional<TypeMirror> getListElementType(VariableElement field) {
-
-        TypeMirror fieldType = field.asType();
+    public Optional<TypeMirror> getListElementTypeFromType(TypeMirror fieldType) {
         TypeMirror listType = processingEnv.getElementUtils().getTypeElement("java.util.List").asType();
-
         Types typeUtils = processingEnv.getTypeUtils();
+
         // 判断是否是 List 的子类型
         if (typeUtils.isAssignable(typeUtils.erasure(fieldType), typeUtils.erasure(listType))) {
             if (fieldType instanceof DeclaredType) {
-                List<? extends TypeMirror> typeArgs = ((DeclaredType)fieldType).getTypeArguments();
+                List<? extends TypeMirror> typeArgs = ((DeclaredType) fieldType).getTypeArguments();
                 if (!typeArgs.isEmpty()) {
                     return Optional.of(typeArgs.get(0)); // 返回 List<T> 中的 T
                 }
@@ -242,4 +257,27 @@ public class TypeParserHelper {
         return Optional.empty(); // 不是 List，或者没有泛型参数
     }
 
+
+    public boolean isByteArray(TypeMirror typeMirror) {
+        if (typeMirror.getKind() != TypeKind.ARRAY) {
+            return false;
+        }
+
+        ArrayType arrayType = (ArrayType) typeMirror;
+        TypeMirror componentType = arrayType.getComponentType();
+        return componentType.getKind() == TypeKind.BYTE;
+    }
+
+    public boolean isInteger(TypeMirror typeMirror) {
+        if (typeMirror.getKind() == TypeKind.INT) {
+            return true;
+        }
+        return typeMirror.toString().equals("java.lang.Integer");
+    }
+    public boolean isLong(TypeMirror typeMirror) {
+        if (typeMirror.getKind() == TypeKind.LONG) {
+            return true;
+        }
+        return typeMirror.toString().equals("java.lang.Long");
+    }
 }

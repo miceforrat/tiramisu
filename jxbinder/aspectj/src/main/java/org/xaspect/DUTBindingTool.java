@@ -6,9 +6,7 @@ import org.xaspect.datas.*;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -22,103 +20,124 @@ import static org.xaspect.TypeParserHelper.*;
 public class DUTBindingTool {
 
     static ProcessingEnvironment processingEnv;
-
-    static List<String> constructGetMethod(ExecutableElement method, String prefix, InstanceDUTTypeInfo instanceFieldType, String outerName, GetMethod getMethod){
-        String outputPrefix = prefix + getMethod.prefix();
-        List<String> ret = new ArrayList<>();
-
-        IOParameters ios = new IOParameters();
+    static CodeBlock constructGetMethod(
+            ExecutableElement method,
+            String prefix,
+            InstanceDUTTypeInfo instanceFieldType,
+            String outerName,
+            GetMethod getMethod){
+        IOParameters ios = new IOParameters(instanceFieldType, method.getReturnType());
+        ios.fieldName = outerName;
         ios.isIn = false;
-//        AnnotationMirror outerPinAnnotation = getAnnotation(method, ReturnsPin.class);
-//        AnnotationMirror outerBundleAnnotation =  getAnnotation(method, ReturnsBundle.class);
-//        Annotation outerBundleAnnotation =  getAnnotationFromType(method.getReturnType(), OutBundle.class);
-//        if (outerBundleAnnotation != null) {
-//            OutBundle outerBundle = (OutBundle) outerBundleAnnotation;
-//            outputPrefix += outerBundle.value();
-//            ios.coveringUnsigned = outerBundle.coveringUnsigned();
-//            ios.unsigned = outerBundle.unsigned();
-//        } else if (outerPinAnnotation != null){
-//            outputPrefix += ((Pin) outerPinAnnotation).value();
+        ios.isPin = false;
+        ios.prefixPattern = prefix + getMethod.prefix();
+        ios.isSon = false;
+        List<? extends AnnotationMirror> annotationMirrors = method.getAnnotationMirrors();
+//        if (TypeParserHelper.getInstance().getAnnotation(method, Pin.class).isEmpty() &&
+//        TypeParserHelper.getInstance().getAnnotation(method, Bundle.class).isEmpty() &&
+//                TypeParserHelper.getInstance().getAnnotation(method, ListedXComponent.class).isEmpty()){
+//            throw new RuntimeException("Method decorated with @GetMethod should also be decorated with @Pin, @Bundle or @ListedXComponent");
 //        }
-        ios.isPin = getMethod.isPin();
-        if (!ios.isPin) {
-            ios.coveringUnsigned =getMethod.coveringUnsigned();
-            ios.unsigned = getMethod.unsigned();
 
-        } else {
-            ios.unsigned = getMethod.unsigned();
+        XComponentConnector componentConnector = ConnectorFactory.buildConnector(ios, annotationMirrors);
+        if (componentConnector == null) {
+            throw new RuntimeException("Method decorated with @GetMethod should also be decorated with @Pin, @Bundle or @ListedXComponent");
         }
-
-
-//        Class<?> returnTypeCls = TypeParserHelper.getInstance().getClassFromTypeMirror(method.getReturnType());
-        String typeName = method.getReturnType().toString();
-        String initializr = typeName + " " + outerName ;
-        if (!ios.isPin) {
-            initializr += " = new " + typeName + "()";
-        }
-        initializr += ";\n";
-        ret.add(initializr);
-
-        // 将 TypeMirror 转换为 TypeElement
-
-        List<String> outputAssigns = constructIO(outputPrefix, method, instanceFieldType, outerName, ios);
-        ret.addAll(outputAssigns);
-
-//        Annotation outerWatchPoint = getAnnotationFromType(method.getReturnType(), WatchPoint.class);
-
-        return ret;
+        return componentConnector.connect();
     }
-
-    static List<String> constructOneParamBinding(String prefix, VariableElement param, String inputBundleName, InstanceDUTTypeInfo instanceField) {
-        IOParameters ios = new IOParameters();
+//    static List<String> constructGetMethod(
+//            ExecutableElement method,
+//            String prefix,
+//            InstanceDUTTypeInfo instanceFieldType,
+//            String outerName,
+//            GetMethod getMethod) {
+//
+//        String outputPrefix = prefix + getMethod.prefix();
+//        List<String> ret = new ArrayList<>();
+//
+//        IOParameters ios = new IOParameters(instanceFieldType, method.getReturnType());
+//        ios.isIn = false;
+//
+//        // ✅ 新的判断方式
+//        XComponentType compType = getMethod.componentType();
+//        ios.isPin = compType == XComponentType.PIN;
+//
+//        if (!ios.isPin) {
+//            ios.coveringUnsigned = getMethod.coveringUnsigned();
+//            ios.unsigned = getMethod.unsigned();
+//        } else {
+//            ios.unsigned = getMethod.unsigned();
+//        }
+//
+//        TypeMirror typeName = method.getReturnType();
+//
+//        // ✅ 初始化输出变量（PIN 不需要 new）
+//        CodeBlock.Builder builder = CodeBlock.builder();
+//        builder.add("$T $L", typeName, outerName);
+//        if (compType != XComponentType.PIN) {
+//            builder.add(" = new $T()", typeName);
+//        }
+//        builder.add(";\n");
+//        ret.add(builder.build().toString());
+//
+//        // ✅ 调用结构构建
+//        List<String> outputAssigns = constructIO(outputPrefix, method, instanceFieldType, outerName, ios);
+//        ret.addAll(outputAssigns);
+//        return ret;
+//    }
+    static CodeBlock constructOneParamBinding(String prefix, VariableElement param, String inputBundleName,
+                                              InstanceDUTTypeInfo instanceField) {
+        IOParameters ios = new IOParameters(instanceField, param.asType());
 
         ios.isIn = true;
-        String inputPrefix = prefix;
-//        Annotation innerPinAnnotation = getAnnotationFromType(param.asType(), Pin.class);
-        AnnotationMirror innerPinAnnotation = getAnnotation(param, Pin.class);
+        ios.isSon = false;
+        ios.prefixPattern = prefix;
+        ios.fieldName = param.getSimpleName().toString();
+        ios.defaultPinNameFromFieldName = ios.fieldName;
+        XComponentConnector componentConnector = ConnectorFactory.buildConnector(ios, param.getAnnotationMirrors());
+        if (componentConnector == null) {
+            throw new RuntimeException("param in method decorated by @PostMethod should be decorated with @Pin, @Bundle or @ListedXComponent");
+        }
+        return componentConnector.connect();
+    }
 
-//        ios.isPin = innerPinAnnotation != null;
-//        Annotation innerBundleAnnotation = getAnnotationFromType(param.asType(), InBundle.class);
-        AnnotationMirror innerBundleAnnotation = getAnnotation(param, InBundle.class);
-        //更新前缀和unsigned设置
-//        if (innerBundleAnnotation != null) {
-//            InBundle inBundle = (InBundle) innerBundleAnnotation;
-//            inputPrefix += inBundle.value();
-//            ios.coveringUnsigned = inBundle.coveringUnsigned();
-//            ios.unsigned = inBundle.unsigned();
-//        } else if (innerPinAnnotation != null) {
-//            Pin pinAnnotation = (Pin) innerPinAnnotation;
-//            if (pinAnnotation.value().isEmpty()){
+//    static List<String> constructOneParamBinding(String prefix, VariableElement param, String inputBundleName, InstanceDUTTypeInfo instanceField) {
+//        IOParameters ios = new IOParameters(instanceField, param.asType());
+//
+//        ios.isIn = true;
+//
+//        // 本地变量 inputPrefix 保留原样
+//        String inputPrefix = prefix;
+//
+//        Optional<AnnotationMirror> innerPinAnnotation = TypeParserHelper.getInstance().getAnnotation(param, Pin.class);
+//        Optional<AnnotationMirror> innerBundleAnnotation = TypeParserHelper.getInstance().getAnnotation(param, InBundle.class);
+//
+//        // 保留原 inputPrefix 拼接逻辑
+//        if (innerBundleAnnotation.isPresent()) {
+//            String value = (String) TypeParserHelper.getInstance().getAnnotationValue(innerBundleAnnotation.get(), "value");
+//            Boolean coveringUnsigned = (Boolean) TypeParserHelper.getInstance().getAnnotationValue(innerBundleAnnotation.get(), "coveringUnsigned");
+//            Boolean unsigned = (Boolean) TypeParserHelper.getInstance().getAnnotationValue(innerBundleAnnotation.get(), "unsigned");
+//
+//            if (value != null) inputPrefix += value;
+//            if (coveringUnsigned != null) ios.coveringUnsigned = coveringUnsigned;
+//            if (unsigned != null) ios.unsigned = unsigned;
+//        } else if (innerPinAnnotation.isPresent()) {
+//            String value = (String) TypeParserHelper.getInstance().getAnnotationValue(innerPinAnnotation.get(), "value");
+//            Boolean unsigned = (Boolean) TypeParserHelper.getInstance().getAnnotationValue(innerPinAnnotation.get(), "unsigned");
+//
+//            if (value == null || value.isEmpty()) {
 //                inputPrefix += param.getSimpleName().toString();
 //            } else {
-//                inputPrefix += pinAnnotation.value();
+//                inputPrefix += value;
 //            }
-//            ios.unsigned = pinAnnotation.unsigned();
+//
+//            ios.isPin = true;
+//            if (unsigned != null) ios.unsigned = unsigned;
 //        }
-        if (innerBundleAnnotation != null) {
-            String value = (String) getAnnotationValue(innerBundleAnnotation, "value");
-            Boolean coveringUnsigned = (Boolean) getAnnotationValue(innerBundleAnnotation, "coveringUnsigned");
-            Boolean unsigned = (Boolean) getAnnotationValue(innerBundleAnnotation, "unsigned");
+//
+//        return constructIO(inputPrefix, param, instanceField, inputBundleName, ios);
+//    }
 
-            if (value != null) inputPrefix += value;
-            if (coveringUnsigned != null) ios.coveringUnsigned = coveringUnsigned;
-            if (unsigned != null) ios.unsigned = unsigned;
-
-        } else if (innerPinAnnotation != null) {
-            String value = (String) getAnnotationValue(innerPinAnnotation, "value");
-            Boolean unsigned = (Boolean) getAnnotationValue(innerPinAnnotation, "unsigned");
-
-            if (value == null || value.isEmpty()) {
-                inputPrefix += param.getSimpleName().toString();
-            } else {
-                inputPrefix += value;
-            }
-            ios.isPin = true;
-            if (unsigned != null) ios.unsigned = unsigned;
-        }
-
-        return constructIO(inputPrefix, param, instanceField, inputBundleName, ios);
-    }
 
 
     private static List<String> constructIO(String pre, Element element, InstanceDUTTypeInfo insInfo, String IOName, IOParameters ioParameters) {
@@ -192,64 +211,72 @@ public class DUTBindingTool {
             String pinPrefix = prefix + field.getAnnotation(SubBundle.class).value();
             List<String> subreses = constructIO(pinPrefix, field, insInfo, subFieldName, subIOS);
             rets.addAll(subreses);
-        } else if (field.getAnnotation(ListPins.class) != null) {
-            // 处理 ListPins 注解
-            ListPins listPinAnnotation = field.getAnnotation(ListPins.class);
-            int start = listPinAnnotation.start();
-            boolean allSignalsUnsigned = listPinAnnotation.unsigned();
-            String arrPrefix = prefix + listPinAnnotation.prefix();
-            if (start < 0){
-                System.err.println("start smaller than 0 in @" + ListPins.class.getSimpleName() + "of field " + field.getSimpleName());
-                start = 0;
-            }
-            int maxIdx = listPinAnnotation.maxIdx();
-            if (maxIdx < start){
-                throw new RuntimeException("max smaller than start in @" + ListPins.class.getSimpleName() + " of field " + field.getSimpleName());
-            }
-
-            Optional<TypeMirror> getListType = TypeParserHelper.getInstance().getListElementType(field);
-            if (!getListType.isPresent()) {
-                throw new RuntimeException("non list type decorated with @" + ListPins.class.getSimpleName());
-            }
-            TypeMirror listType = getListType.get();
-            if (!ioParameters.isIn){
-                rets.add(CodeBlock.builder().addStatement("$L.$N = new $T<>($L)", fieldPrefix, field.getSimpleName(), ArrayList.class, maxIdx).build().toString());
-            }
-
-            String arrFullName = fieldPrefix + "." + field.getSimpleName();
-
-            for (int i = start; i <= maxIdx; i++) {
-                IOParameters subIOS = ioParameters.copy();
-                String trueArrElementPin = arrPrefix + i;
-                subIOS.isSon = true;
-                subIOS.isPin = true;
-                subIOS.unsigned = allSignalsUnsigned;
-                subIOS.arrIdx = i;
-                rets.addAll(constructIO(trueArrElementPin, field, insInfo, arrFullName, subIOS));
-            }
-
+//        } else if (field.getAnnotation(ListedXComponent.class) != null) {
+//            // 处理 ListPins 注解
+//            ListedXComponent listPinAnnotation = field.getAnnotation(ListedXComponent.class);
+//            int start = listPinAnnotation.start();
+//            boolean allSignalsUnsigned = listPinAnnotation.unsigned();
+//            String arrPrefix = prefix + listPinAnnotation.prefix();
+//            if (start < 0){
+//                System.err.println("start smaller than 0 in @" + ListedXComponent.class.getSimpleName() + "of field " + field.getSimpleName());
+//                start = 0;
+//            }
+//            int maxIdx = listPinAnnotation.maxIdx();
+//            if (maxIdx < start){
+//                throw new RuntimeException("max smaller than start in @" + ListedXComponent.class.getSimpleName() + " of field " + field.getSimpleName());
+//            }
+//
+//            Optional<TypeMirror> getListType = TypeParserHelper.getInstance().getListElementType(field);
+//            if (!getListType.isPresent()) {
+//                throw new RuntimeException("non list type decorated with @" + ListedXComponent.class.getSimpleName());
+//            }
+//            TypeMirror listType = getListType.get();
+//            if (!ioParameters.isIn){
+//                rets.add(CodeBlock.builder().addStatement("$L.$N = new $T<>($L)", fieldPrefix, field.getSimpleName(), ArrayList.class, maxIdx).build().toString());
+//            }
+//
+//            String arrFullName = fieldPrefix + "." + field.getSimpleName();
+//
+//            for (int i = start; i <= maxIdx; i++) {
+//
+//                IOParameters subIOS = ioParameters.copy();
+//                String trueArrElementPin = arrPrefix + i;
+//                String tmpArrVar = arrPrefix + "__tmp__" + i;
+//                subIOS.isSon = true;
+//                subIOS.isPin = listPinAnnotation.isPin();
+//                subIOS.unsigned = allSignalsUnsigned;
+//                if (!subIOS.isPin){
+//                    subIOS.coveringUnsigned = listPinAnnotation.coveringUnsigned();
+//                    trueArrElementPin += listPinAnnotation.listBundlePrefix();
+//                }
+//                CodeBlock.Builder builder = CodeBlock.builder();
+//                if (subIOS.isIn) {
+//                    builder.addStatement("$T $N = $L.get($L)", listType, tmpArrVar, arrFullName, i);
+//                } else {
+//                    if (subIOS.isPin){
+//                        builder.addStatement("$T $N", listType, tmpArrVar);
+//                    } else {
+//                        builder.addStatement("$T $N = new $T()", listType, tmpArrVar, listType);
+//                    }
+//                }
+//                rets.add(builder.build().toString());
+//                rets.addAll(constructIO(trueArrElementPin, field, insInfo, arrFullName, subIOS));
+//                if (!subIOS.isIn){
+//                    rets.add(CodeBlock.builder().addStatement("$L.set($L, $N)", arrFullName, i, tmpArrVar).build().toString());
+//                }
+//            }
 
         }
     }
-    private static boolean isInteger(TypeMirror typeMirror) {
-        if (typeMirror.getKind() == TypeKind.INT) {
-            return true;
-        }
-        return typeMirror.toString().equals("java.lang.Integer");
-    }
-    private static boolean isLong(TypeMirror typeMirror) {
-        if (typeMirror.getKind() == TypeKind.LONG) {
-            return true;
-        }
-        return typeMirror.toString().equals("java.lang.Long");
-    }
+
+
 
     private static String getBasicTypeValStr(TypeMirror typeMirror, String signedBefore) {
-        if (isInteger(typeMirror)) {
+        if (TypeParserHelper.getInstance().isInteger(typeMirror)) {
             return signedBefore + ".intValue()";
-        } else if (isLong(typeMirror)) {
+        } else if (TypeParserHelper.getInstance().isLong(typeMirror)) {
             return signedBefore + ".longValue()";
-        } else if (isByteArray(typeMirror)) {
+        } else if (TypeParserHelper.getInstance().isByteArray(typeMirror)) {
             return ".GetBytes()";
         } else if (typeMirror.toString().equals("java.lang.String")) {
             return ".String()";
@@ -305,67 +332,15 @@ public class DUTBindingTool {
     }
 
     private static String constructSimpleAssignment(String pinFullName, String fieldFullName, IOParameters ios, TypeMirror fieldType) {
-        boolean isArr = ios.arrIdx >= 0;
         if (ios.isIn) {
-            if (!isArr) {
                 return String.format("%s.Set(%s);\n", pinFullName, fieldFullName);
-            } else {
-                return String.format("%s.Set(%s.get(%s));\n", pinFullName, fieldFullName, ios.arrIdx);
-            }
         } else {
             String signedGet = "." + (ios.unsigned ? "U()" : "S()");
             String basicGet = getBasicTypeValStr(fieldType, signedGet);
-            if (!isArr) {
-                return String.format("%s = %s%s;\n", fieldFullName, pinFullName, basicGet);
-            } else {
-                return String.format("%s.set(%s, %s%s);\n", fieldFullName, ios.arrIdx, pinFullName, basicGet);
-            }
+            return String.format("%s = %s%s;\n", fieldFullName, pinFullName, basicGet);
 
         }
     }
-
-//    static String constructSingleAssignment(String fieldFullName, Class<?> fieldType, String pinName, boolean isIn, boolean unsigned, InstanceDUTTypeInfo insInfo) {
-//        String pinFullName = insInfo.getInstanceName() + "." + pinName;
-//
-//        if (isIn){
-//            return pinFullName + ".Set(" + fieldFullName + ");\n";
-//        } else {
-//            String signedGet = unsigned? "U()": "S()";
-//            return fieldFullName + " = " + pinFullName + "." + signedGet  + getBasicTypeValStr(fieldType) + ";\n";
-//        }
-//    }
-
-
-    private static boolean isByteArray(TypeMirror typeMirror) {
-        if (typeMirror.getKind() != TypeKind.ARRAY) {
-            return false;
-        }
-
-        ArrayType arrayType = (ArrayType) typeMirror;
-        TypeMirror componentType = arrayType.getComponentType();
-        return componentType.getKind() == TypeKind.BYTE;
-    }
-
-
-
-//    static Annotation getAnnotationFromType(TypeMirror type, Class<?> annotationClass) {
-//        // 检查类型上的注解
-//        for (AnnotationMirror annotationMirror : type.getAnnotationMirrors()) {
-//            DeclaredType annotationType = annotationMirror.getAnnotationType();
-//            Element annotationElement = annotationType.asElement();
-//            if (annotationElement.toString().equals(annotationClass.getCanonicalName())) {
-//                return type.getAnnotation((Class<? extends Annotation>) annotationClass); // 找到了目标注解，返回注解对象
-//            }
-//        }
-//
-//        // 如果是数组类型，递归检查组件类型
-//        if (type.getKind() == TypeKind.ARRAY) {
-//            ArrayType arrayType = (ArrayType) type;
-//            return getAnnotationFromType(arrayType.getComponentType(), annotationClass);
-//        }
-//
-//        return null; // 没有找到目标注解
-//    }
 
 
 
