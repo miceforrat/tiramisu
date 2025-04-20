@@ -1,6 +1,5 @@
 package org.xaspect;
 
-import org.xaspect.datas.XComponentType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

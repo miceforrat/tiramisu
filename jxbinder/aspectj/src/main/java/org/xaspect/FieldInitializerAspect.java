@@ -73,7 +73,7 @@ public class FieldInitializerAspect {
 //        String dutId = annotation.id();
 
         // 获取实现类的全限定名
-        String implClassName = fieldType.getCanonicalName() + "ImplWithPrefix" + annotation.value(); // 假设生成的类名规则为 "FieldTypeImpl"
+        String implClassName = StringUtils.getDaoNameWithPrefixHash(fieldType.getCanonicalName(), annotation.value());
 
 //        if (existingDaos.get(implClassName) != null) {
 //            return existingDaos.get(implClassName);

@@ -5,6 +5,7 @@ import com.xspcomm.XData;
 
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import java.math.BigInteger;
 import java.util.Map;
 
 public class PinConnector implements XComponentConnector {
@@ -72,7 +73,7 @@ public class PinConnector implements XComponentConnector {
         }
 
         System.err.println("pin following pattern: " + prefixPattern + " is not found, please recheck!");
-        return cb;
+        return CodeBlock.builder().addStatement("$N = $L", fieldFullName, getDefaultTypeAssignment(fieldType)).build();
     }
 
     private boolean mirrorEqualsClass(TypeMirror typeMirror, Class<?> clazz) {
@@ -84,25 +85,65 @@ public class PinConnector implements XComponentConnector {
             return CodeBlock.of("$L.Set($L);\n", pinFullName, fieldFullName);
         } else {
             String signedGet = "." + (unsigned ? "U()" : "S()");
-            String basicGet = getBasicTypeValStr(fieldType, signedGet);
+            String basicGet = getBasicTypeBindingStr(fieldType, signedGet);
             return CodeBlock.of("$L = $L$L;\n", fieldFullName, pinFullName, basicGet);
         }
     }
 
 
-    private String getBasicTypeValStr(TypeMirror typeMirror, String signedBefore) {
-        if (TypeParserHelper.getInstance().isInteger(typeMirror)) {
-            return signedBefore + ".intValue()";
-        } else if (TypeParserHelper.getInstance().isLong(typeMirror)) {
-            return signedBefore + ".longValue()";
-        } else if (TypeParserHelper.getInstance().isByteArray(typeMirror)) {
-            return ".GetBytes()";
-        } else if (typeMirror.toString().equals("java.lang.String")) {
-            return ".String()";
-        } else if (typeMirror.toString().equals("java.math.BigInteger")) {
-            return signedBefore;
+    private String getBasicTypeBindingStr(TypeMirror typeMirror, String signedBefore) {
+        SupportedBasicType type = SupportedBasicType.getSupportedBasicTypes(typeMirror);
+        switch (type) {
+            case INT:
+                return signedBefore + ".intValue()";
+            case LONG:
+                return signedBefore + ".longValue()";
+            case STRING:
+                return ".String()";
+            case BYTES:
+                return ".GetBytes()";
+            case BIG_INTEGER:
+                return signedBefore;
+            default:
+                return "";
         }
+    }
 
-        return "";
+    private String getDefaultTypeAssignment(TypeMirror typeMirror) {
+        SupportedBasicType type = SupportedBasicType.getSupportedBasicTypes(typeMirror);
+        switch (type) {
+            case INT:
+                return "0";
+            case LONG:
+                return "0L";
+            case STRING:
+                return "\"\"";
+            case BYTES:
+                return "new byte[0]";
+            case BIG_INTEGER:
+                return "BigInteger.valueOf(0L)";
+            default:
+                return "0";
+        }
+    }
+
+
+    private enum SupportedBasicType{
+        INT, LONG, BYTES, STRING, BIG_INTEGER;
+
+        static SupportedBasicType getSupportedBasicTypes(TypeMirror typeMirror) {
+            if (TypeParserHelper.getInstance().isInteger(typeMirror)) {
+                return INT;
+            } else if (TypeParserHelper.getInstance().isLong(typeMirror)) {
+                return LONG;
+            } else if (TypeParserHelper.getInstance().isByteArray(typeMirror)) {
+                return BYTES;
+            } else if (typeMirror.toString().equals("java.lang.String")) {
+                return STRING;
+            } else if (typeMirror.toString().equals("java.math.BigInteger")) {
+                return BIG_INTEGER;
+            }
+            return INT;
+        }
     }
 }

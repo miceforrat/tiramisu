@@ -7,7 +7,7 @@ public class IOParameters {
     boolean isIn = true;
     boolean isSon = false;
 
-    int listIdx = -1;
+    int listIdx = 0;
 
     // pin related
     boolean unsigned = true;

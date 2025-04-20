@@ -13,46 +13,43 @@ public class ConnectorFactory {
         TypeParserHelper helper = TypeParserHelper.getInstance();
 
         Optional<AnnotationMirror> listAnnOpt = helper.getAnnotation(annotations, ListedXComponent.class);
-
         if (listAnnOpt.isPresent()) {
             AnnotationMirror listAnn = listAnnOpt.get();
-
             IOParameters io = ios.copy();
 
-            int[] maxIdxs = (int[]) TypeParserHelper.getInstance().getAnnotationValue(listAnn, "maxIdx");
+            List<Integer> maxIdxs = helper.getAnnotationIntList(listAnn, "maxIdx");
 
             // 检查是否还有更多的 List 维度
-            if (maxIdxs != null && io.listIdx < maxIdxs.length) {
-                int[] starts = (int[]) TypeParserHelper.getInstance().getAnnotationValue(listAnn, "start");
+            if (io.listIdx < maxIdxs.size()) {
+                List<Integer> starts = helper.getAnnotationIntList(listAnn, "start");
+                List<String> prefixes = helper.getAnnotationStringList(listAnn, "prefix");
+                List<Boolean> unsigneds = helper.getAnnotationBooleanList(listAnn, "unsigned");
+                List<Boolean> coverings = helper.getAnnotationBooleanList(listAnn, "coveringUnsigned");
 
-                String[] prefixes = (String[]) TypeParserHelper.getInstance().getAnnotationValue(listAnn, "prefix");
-                boolean[] unsigneds = (boolean[]) TypeParserHelper.getInstance().getAnnotationValue(listAnn, "unsigned");
-                boolean[] coverings = (boolean[]) TypeParserHelper.getInstance().getAnnotationValue(listAnn, "coveringUnsigned");
+                int start = (io.listIdx < starts.size()) ? starts.get(io.listIdx) : 0;
+                int max = maxIdxs.get(io.listIdx);
 
-                int start = (starts != null && io.listIdx < starts.length) ? starts[io.listIdx] : 0;
-                int max = maxIdxs[io.listIdx];
                 if (start > max) {
                     throw new IllegalArgumentException("start > maxIdx at list dimension: " + io.listIdx);
                 }
 
-                // 累加 prefix
-                if (prefixes != null && io.listIdx < prefixes.length) {
-                    io.prefixPattern += prefixes[io.listIdx];
+                if (io.listIdx < prefixes.size()) {
+                    io.prefixPattern += prefixes.get(io.listIdx);
                 }
 
-                // 累加覆盖标志（如果没有设置则不变）
-                if (!io.coveringUnsigned) {
-                    if (coverings != null && io.listIdx < coverings.length){
-                        io.coveringUnsigned = coverings[io.listIdx];
-                        if (unsigneds != null && io.listIdx < unsigneds.length) io.unsigned = unsigneds[io.listIdx];
+                if (!io.coveringUnsigned && io.listIdx < coverings.size() && coverings.get(io.listIdx)) {
+                    io.coveringUnsigned = true;
+                    if (io.listIdx < unsigneds.size()) {
+                        io.unsigned = unsigneds.get(io.listIdx);
                     }
                 }
+
                 io.listIdx++;
 
                 return new ListedXComponentConnector(io, start, max, annotations);
             }
 
-            // 如果 listIdx 超出，则表示 list 结构已经结束，fall through 到 pin/bundle
+            // listIdx 已超出，fall through 到 pin/bundle 分析
         }
 
 
@@ -90,13 +87,13 @@ public class ConnectorFactory {
 
         if (isBundle) {
             IOParameters io = ios.copy();
-
-            io.listIdx = -1;
+            io.listIdx = 0;
             for (Optional<AnnotationMirror> annOpt : bundleAnnotations) {
                 if (annOpt.isEmpty()) continue;
 
                 AnnotationMirror ann = annOpt.get();
                 String value = (String) helper.getAnnotationValue(ann, "value");
+
                 if (value != null) {
                     io.prefixPattern += value;
                 }

@@ -20,6 +20,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TypeParserHelper {
 
@@ -240,6 +241,14 @@ public class TypeParserHelper {
         return false;
     }
 
+    public boolean isListType(TypeMirror type) {
+        Types types = processingEnv.getTypeUtils(); // javax.annotation.processing.ProcessingEnvironment
+        Elements elements = processingEnv.getElementUtils();
+        TypeMirror listType = elements.getTypeElement("java.util.List").asType();
+        return types.isAssignable(types.erasure(type), types.erasure(listType));
+    }
+
+
     public Optional<TypeMirror> getListElementTypeFromType(TypeMirror fieldType) {
         TypeMirror listType = processingEnv.getElementUtils().getTypeElement("java.util.List").asType();
         Types typeUtils = processingEnv.getTypeUtils();
@@ -280,4 +289,32 @@ public class TypeParserHelper {
         }
         return typeMirror.toString().equals("java.lang.Long");
     }
+
+    public List<Integer> getAnnotationIntList(AnnotationMirror mirror, String name) {
+        List<? extends AnnotationValue> values = (List<? extends AnnotationValue>) getAnnotationValue(mirror, name);
+        if (values != null) {
+            return values.stream()
+                    .map(v -> (Integer) v.getValue()).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public List<String> getAnnotationStringList(AnnotationMirror mirror, String name) {
+        List<? extends AnnotationValue> values = (List<? extends AnnotationValue>) getAnnotationValue(mirror, name);
+        if (values != null) {
+            return values.stream()
+                    .map(v -> (String) v.getValue()).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public List<Boolean> getAnnotationBooleanList(AnnotationMirror mirror, String name) {
+        List<? extends AnnotationValue> values = (List<? extends AnnotationValue>) getAnnotationValue(mirror, name);
+        if (values != null) {
+            return values.stream()
+                    .map(v -> (Boolean) v.getValue()).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
 }

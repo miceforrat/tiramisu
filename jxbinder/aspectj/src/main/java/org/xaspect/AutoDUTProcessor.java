@@ -177,11 +177,12 @@ public class AutoDUTProcessor extends AbstractProcessor {
         String prefix = autoDUTDao.value();
 
         // 生成实现类名
-        String implClassName = fieldType.getSimpleName() + "ImplWithPrefix";
-        if (prefix != null && !prefix.isEmpty()) {
-            int hashRes = prefix.hashCode();
-            implClassName += Integer.toUnsignedString(hashRes).charAt(0) + Integer.toString(hashRes).substring(1);
-        }
+        String implClassName = StringUtils.getDaoNameWithPrefixHash(fieldType.getSimpleName().toString(), prefix);
+//                fieldType.getSimpleName() + "ImplWithPrefixHash";
+//        if (prefix != null && !prefix.isEmpty()) {
+//            int hashRes = prefix.hashCode();
+//            implClassName += Integer.toUnsignedString(hashRes).charAt(0) + Integer.toString(hashRes).substring(1);
+//        }
         String qualifiedName = packageName + "." + implClassName;
         if (doesClassExist(packageName, implClassName)){
             System.err.println("Class " + implClassName + " already exists, skipping.");
@@ -204,7 +205,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
         classBuilder.buildConstructor(implClassBuilder, fieldType, autoDUTDao);
         // 添加字段和构造方法
 
-        addMethodsToImplClass(implClassBuilder, fieldType, prefix, processingEnv.getTypeUtils(), classBuilder);
+        addMethodsToImplClass(implClassBuilder, fieldType, prefix, classBuilder);
 
         // 获取`@AutoDUT`修饰类的包路径
         // 写入生成的类到相同包路径
@@ -221,7 +222,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
     }
 
-    private void addMethodsToImplClass(TypeSpec.Builder implClassBuilder, TypeElement fieldType, String prefix, Types typeUtils, DUTDaoBuilder clsBuilder) {
+    private void addMethodsToImplClass(TypeSpec.Builder implClassBuilder, TypeElement fieldType, String prefix, DUTDaoBuilder clsBuilder) {
         Set<String> processedMethods = new HashSet<>(); // 防止重复处理同名方法
         // 遍历当前类型及其父类或接口
         Map<String, ExecutableElement> executableElementMap = TypeParserHelper.getInstance().collectAllMethods(fieldType);
@@ -295,7 +296,6 @@ public class AutoDUTProcessor extends AbstractProcessor {
                     }
                 }
 //                    methodBuilder.addCode(methodBody.toString());
-
                 // 添加方法到实现类
                 implClassBuilder.addMethod(methodBuilder.build());
 //            }
