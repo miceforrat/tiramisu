@@ -9,4 +9,8 @@ public class StringUtils {
         }
         return implClassName;
     }
+
+    public static String getDUTManagerString(String dutName){
+        return dutName + "Impl";
+    }
 }

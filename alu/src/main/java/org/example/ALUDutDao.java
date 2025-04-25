@@ -10,18 +10,8 @@ public interface ALUDutDao
         extends DUTDao <UT_ALU> {
 
     @PostMethod
-    void postIn(ALUIO in);
+    void postIn(@Pin("a") int a, @Pin("b") int b, @Pin("alu_sel") int sel);
 
-    @GetMethod(prefix = "alu_out")
-    @Pin
+    @GetMethod(prefix = "alu_out") @Pin
     int getOut();
-
-    @PostMethod
-    void setAb(@Pin int a, @Pin int b);
-
-    @PostMethod
-    void setSel(@Pin("alu_sel") int sel);
-
-
-
 }

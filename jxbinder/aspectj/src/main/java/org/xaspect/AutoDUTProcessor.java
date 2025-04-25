@@ -8,8 +8,6 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.lang.model.type.*;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
-import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.util.*;
 

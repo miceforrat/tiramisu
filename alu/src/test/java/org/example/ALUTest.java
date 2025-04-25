@@ -1,120 +1,63 @@
 package org.example;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.junit.*;
-import org.xaspect.datas.Pin;
-import org.xaspect.services.ServiceRunner;
-import org.xaspect.testSupports.CoverageManager;
-import org.xaspect.testSupports.RefRepository;
+import com.ut.UT_ALU;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.xaspect.AutoDUTDao;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-
+@Execution(ExecutionMode.CONCURRENT)
 public class ALUTest {
     
     private final int limit = 0xFF;
 
-//    @AutoDUT
-//    ALUWrapper alu = new ALUWrapper();
-    ALUWrapper alu;
+    UT_ALU alu;
 
-    static CoverageManager coverageManager;
+    @AutoDUTDao
+    ALUDutDao dao;
 
-    @BeforeClass
-    public static void setUpBeforeClass() {
-//        coverageManager = CoverageManager.getCoverageManager("ALU");
-//        alu = new ALUWrapper();
 
-//        RefRepository.getInstance().submitRefModel("a", new ALURef());
-    }
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        alu = new ALUWrapper();
-        RefRepository.getInstance().attachModelWithDUT(new ALURef(), alu);
-
-//        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
-//
-//        Map<String, Function<UT_ALU, Boolean>> coverageMap = new HashMap<>();
-//
-//        for (int i =0 ; i< 16; i++){
-//            int finalI = i;
-//            coverageMap.put(String.format("Sel%d", i), utAlu -> utAlu.alu_sel.U().intValue() == finalI);
-//        }
-//
-//        testingCoverage.createWatchPointWithClock("32", coverageMap, alu.alu, alu.cm);
-//        coverageManager.addCoverageGroupForSingleClock(testingCoverage, alu.cm);
-//        coverageManager = CoverageManager.getCoverageManager(alu.cm);
+        alu = new UT_ALU();
+        dao.bind(alu);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
-        this.alu.clear();
-//        this.coverageManager.printReport();
+        this.alu.Finish();
     }
 
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-//         alu.clear();
-
-//        coverageManager.printReport();
-    }
-
-    @Test
-    public void testAdd() {
-
-        ALUIO in = new ALUIO();
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-                in.a = a;
-                in.b = b;
-                in.sel = 0;
-                int res = alu.process(in);
-//                assertEquals((a+b) & limit, alu.process(in));
-            }
-        }
-
-    }
-
-    @Test
-    public void testAll(){
-        ALUIO in = new ALUIO();
-
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-                for (int c = 0; c < 16; c++){
-                    in.a = a;
-                    in.b = b;
-                    in.sel  = c;
-                    int res = alu.process(in);
-//                    assertEquals(refModel(in.a, in.b, in.sel), res);
-                }
+//    @Test
+//    public void testAll(){
+//        for (int sel = 0; sel < 16; sel++) {
+//
+//            for (int a = 0; a < 256; a++) {
+//                for (int b = 0; b < 256; b++) {
+//                    assertEquals(refModel(a, b, sel), process(a, b, sel));
+//                }
+//            }
+//        }
+//    }
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+    void testAllBySel(int sel) {
+        for (int a = 0; a < 256; a++) {
+            for (int b = 0; b < 256; b++) {
+                assertEquals(refModel(a, b, sel), process(a, b, sel), String.format("Mismatch at a=%d, b=%d, sel=%d", a, b, sel));
             }
         }
     }
 
-    @Test
-    public void randTest(){
-        Random random = new Random();
-        random.setSeed(System.currentTimeMillis());
-        ALUIO in = new ALUIO();
-        for (int i = 0 ; i < 10000; i++){
-            in.a = random.nextInt( 256);
-            in.b = random.nextInt( 256);
-            in.sel  = random.nextInt( 16);
-            int res = alu.process(in);
-//            assertEquals(res, refModel(in.a, in.b, in.sel));
-        }
+    public int process(int a, int b, int sel) {
+        dao.postIn(a, b, sel);
+        alu.Step();
+        return dao.getOut();
     }
-
-
 
     private int refModel(int a, int b, int sel){
          switch (sel) {

@@ -1,14 +1,9 @@
 package org.xaspect;
 
-import co.paralleluniverse.strands.SuspendableRunnable;
 import com.squareup.javapoet.*;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public interface DUTManagerBuilder {
 
