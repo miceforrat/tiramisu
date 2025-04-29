@@ -83,13 +83,6 @@ public interface DUTManagerBuilder {
 //            covSetStmt = "this." + instanceFieldName + ".SetCoverage(\"" + covFileName + "\");\n";
         }
 
-        String resetName = dutInfo.resetName();
-        if (!resetName.isEmpty()){
-            builder.addStatement("this.$N.$L.Set($L)", DUT_INSTANCE_NAME, resetName, dutInfo.resetValue())
-                    .addStatement("this.$N.Step()", DUT_INSTANCE_NAME)
-                    .addStatement("this.$N.$L.Set($L)", DUT_INSTANCE_NAME, resetName, dutInfo.banResetValue());
-        }
-
         String[] imms = dutInfo.immediatePins();
         String[] immInitials = dutInfo.immPinInitials();
         if (imms.length > 0){
@@ -102,6 +95,14 @@ public interface DUTManagerBuilder {
                         .addStatement("this.$N.$N.Set($L)", DUT_INSTANCE_NAME, imms[i], immInitials[i]);
             }
         }
+
+        String resetName = dutInfo.resetName();
+        if (!resetName.isEmpty()){
+            builder.addStatement("this.$N.$L.Set($L)", DUT_INSTANCE_NAME, resetName, dutInfo.resetValue())
+                    .addStatement("this.$N.Step()", DUT_INSTANCE_NAME)
+                    .addStatement("this.$N.$L.Set($L)", DUT_INSTANCE_NAME, resetName, dutInfo.banResetValue());
+        }
+
 
 //        builder.add(covSetStmt);
         return builder.build();
