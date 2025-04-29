@@ -90,6 +90,19 @@ public interface DUTManagerBuilder {
                     .addStatement("this.$N.$L.Set($L)", DUT_INSTANCE_NAME, resetName, dutInfo.banResetValue());
         }
 
+        String[] imms = dutInfo.immediatePins();
+        String[] immInitials = dutInfo.immPinInitials();
+        if (imms.length > 0){
+            if (immInitials.length != imms.length){
+                throw new IllegalArgumentException("immediates must have the same length");
+            }
+
+            for (int i = 0; i < immInitials.length; i++){
+                builder.addStatement("this.$N.$N.AsImmWrite()", DUT_INSTANCE_NAME, imms[i])
+                        .addStatement("this.$N.$N.Set($L)", DUT_INSTANCE_NAME, imms[i], immInitials[i]);
+            }
+        }
+
 //        builder.add(covSetStmt);
         return builder.build();
     }
