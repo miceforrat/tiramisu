@@ -7,13 +7,11 @@ import org.xaspect.datas.*;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.xaspect.TypeParserHelper.*;
 
@@ -342,37 +340,132 @@ public class DUTBindingTool {
         }
     }
 
-
-
-
     static TypeMirror getInheritingType(TypeElement fieldType, Class<?> inheritingClass) {
-        Types typeUtils = processingEnv.getTypeUtils();
+//        Types typeUtils = processingEnv.getTypeUtils();
         Elements elementUtils = processingEnv.getElementUtils();
-
-        // 获取类型
-        TypeElement dutWrapperElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName()); // 替换全限定名
-        if (dutWrapperElement == null) {
-            throw new IllegalStateException("DUTWrapper not found in the classpath");
+        TypeElement targetElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName());
+        if (targetElement == null) {
+            throw new IllegalStateException("Target class not found: " + inheritingClass.getCanonicalName());
         }
-        DeclaredType dutWrapperType = (DeclaredType) dutWrapperElement.asType();
 
-        // 检查接口是否直接继承 DUTWrapper
-        for (TypeMirror superInterface : fieldType.getInterfaces()) {
-            if (typeUtils.isAssignable(typeUtils.erasure(superInterface), typeUtils.erasure(dutWrapperType))) {
-                // 检查泛型信息
-                if (superInterface instanceof DeclaredType) {
-                    DeclaredType declaredType = (DeclaredType) superInterface;
-                    if (declaredType.getTypeArguments().size() == 1) {
-                        // 添加更多泛型验证逻辑（如果需要）
-                        return declaredType.getTypeArguments().get(0);
+        Queue<TypeMirror> queue = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
+
+        queue.add(fieldType.asType());
+
+        while (!queue.isEmpty()) {
+            TypeMirror current = queue.poll();
+            String currentStr = current.toString();
+            if (!visited.add(currentStr)) continue;
+
+            if (current instanceof DeclaredType) {
+                DeclaredType declaredType = (DeclaredType) current;
+                TypeElement element = (TypeElement) declaredType.asElement();
+
+                // ✅ 精确匹配接口本体（不使用 isAssignable）
+                if (element.getQualifiedName().contentEquals(targetElement.getQualifiedName())) {
+                    List<? extends TypeMirror> args = declaredType.getTypeArguments();
+                    if (args.size() == 1) {
+                        return args.get(0);
                     } else {
-                        throw new IllegalStateException("DUTDao interface must have exactly one type argument");
+                        throw new IllegalStateException("Target interface must have exactly one type parameter");
                     }
+                }
+
+                // 添加父接口
+                queue.addAll(element.getInterfaces());
+
+                // 添加父类（跳过 java.lang.Object）
+                TypeMirror superClass = element.getSuperclass();
+                if (superClass != null && superClass.getKind() != TypeKind.NONE) {
+                    queue.add(superClass);
                 }
             }
         }
-        throw new IllegalStateException("not extends from DUTDao");
+
+        throw new IllegalStateException(fieldType.getQualifiedName() + " does not directly or indirectly implement " + inheritingClass.getSimpleName());
     }
+
+
+
+//    static TypeMirror getInheritingType(TypeElement fieldType, Class<?> inheritingClass) {
+//        Types typeUtils = processingEnv.getTypeUtils();
+//        Elements elementUtils = processingEnv.getElementUtils();
+//
+//        TypeElement targetElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName());
+//        if (targetElement == null) {
+//            throw new IllegalStateException("Target class not found: " + inheritingClass.getCanonicalName());
+//        }
+//
+//        TypeMirror targetType = targetElement.asType();
+//
+//        // 广度优先遍历所有父接口/类
+//        Queue<TypeMirror> toCheck = new LinkedList<>();
+//        Set<TypeMirror> visited = new HashSet<>();
+//        toCheck.add(fieldType.asType());
+//
+//        while (!toCheck.isEmpty()) {
+//            TypeMirror current = toCheck.poll();
+//            if (!visited.add(current)) continue;
+//
+//            // 如果是 declared 类型才可能有类型参数
+//            if (current instanceof DeclaredType) {
+//                DeclaredType declaredType = (DeclaredType) current;
+//                TypeMirror erased = typeUtils.erasure(declaredType);
+//                if (typeUtils.isAssignable(erased, typeUtils.erasure(targetType))) {
+//                    List<? extends TypeMirror> args = declaredType.getTypeArguments();
+//                    if (args.size() == 1) {
+//                        return args.get(0);
+//                    } else {
+//                        System.err.println(args);
+//                        throw new IllegalStateException("Interface " + current + " must have exactly one type argument but args " + args);
+//                    }
+//                }
+//
+//                // 将其父接口加入队列
+//                TypeElement declaredElement = (TypeElement) declaredType.asElement();
+//                toCheck.addAll(declaredElement.getInterfaces());
+//
+//                // 加入父类（如果不是 Object）
+//                TypeMirror superclass = declaredElement.getSuperclass();
+//                if (superclass != null && superclass.getKind() != TypeKind.NONE) {
+//                    toCheck.add(superclass);
+//                }
+//            }
+//        }
+//
+//        throw new IllegalStateException(fieldType.getQualifiedName() + " does not implement " + inheritingClass.getSimpleName());
+//    }
+
+
+//    static TypeMirror getInheritingType(TypeElement fieldType, Class<?> inheritingClass) {
+//        Types typeUtils = processingEnv.getTypeUtils();
+//        Elements elementUtils = processingEnv.getElementUtils();
+//
+//        // 获取类型
+//        TypeElement dutWrapperElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName()); // 替换全限定名
+//        if (dutWrapperElement == null) {
+//            throw new IllegalStateException("DUTWrapper not found in the classpath");
+//        }
+//        DeclaredType dutWrapperType = (DeclaredType) dutWrapperElement.asType();
+//
+//        // 检查接口是否直接继承 DUTDao
+//        for (TypeMirror superInterface : fieldType.getInterfaces()) {
+//            if (typeUtils.isAssignable(typeUtils.erasure(superInterface), typeUtils.erasure(dutWrapperType))) {
+//                // 检查泛型信息
+//                if (superInterface instanceof DeclaredType) {
+//                    DeclaredType declaredType = (DeclaredType) superInterface;
+//                    if (declaredType.getTypeArguments().size() == 1) {
+//                        // 添加更多泛型验证逻辑（如果需要）
+//                        return declaredType.getTypeArguments().get(0);
+//                    } else {
+//                        throw new IllegalStateException("DUTDao interface must have exactly one type argument");
+//                    }
+//                }
+//            }
+//        }
+//        throw new IllegalStateException("not extends from DUTDao");
+//    }
 
 
 

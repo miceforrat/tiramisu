@@ -228,7 +228,9 @@ public class AutoDUTProcessor extends AbstractProcessor {
         for (ExecutableElement method : executableElementMap.values()) {
 //            if (enclosedElement.getKind() == ElementKind.METHOD) {
 //                ExecutableElement method = (ExecutableElement) enclosedElement;
-
+                if (method.getModifiers().contains(Modifier.DEFAULT)){
+                    continue;
+                }
                 // 防止覆盖同名方法
                 String methodSignature = method.getSimpleName().toString() + method.getParameters();
                 if (processedMethods.contains(methodSignature)) {
