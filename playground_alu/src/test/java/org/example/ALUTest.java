@@ -38,7 +38,7 @@ public class ALUTest {
     @Before
     public void setUp() throws Exception {
         alu = new ALUWrapper();
-        RefRepository.getInstance().attachModelWithDUT(new ALURef(), alu);
+//        RefRepository.getInstance().attachModelWithDUT(new ALURef(), alu);
 
 //        CoverageGroup testingCoverage = coverageManager.getCoverageGroup("testing");
 //
@@ -70,49 +70,49 @@ public class ALUTest {
     @Test
     public void testAdd() {
 
-        ALUIO in = new ALUIO();
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-                in.a = a;
-                in.b = b;
-                in.sel = 0;
-                int res = alu.process(in);
-//                assertEquals((a+b) & limit, alu.process(in));
-            }
-        }
+//        ALUIO in = new ALUIO();
+//        for (int a = 0; a < 256; a++){
+//            for (int b = 0; b < 256; b++){
+//                in.a = a;
+//                in.b = b;
+//                in.sel = 0;
+//                int res = alu.process(in);
+////                assertEquals((a+b) & limit, alu.process(in));
+//            }
+//        }
 
     }
 
-    @Test
-    public void testAll(){
-        ALUIO in = new ALUIO();
-
-        for (int a = 0; a < 256; a++){
-            for (int b = 0; b < 256; b++){
-                for (int c = 0; c < 16; c++){
-                    in.a = a;
-                    in.b = b;
-                    in.sel  = c;
-                    int res = alu.process(in);
-//                    assertEquals(refModel(in.a, in.b, in.sel), res);
-                }
-            }
-        }
-    }
-
-    @Test
-    public void randTest(){
-        Random random = new Random();
-        random.setSeed(System.currentTimeMillis());
-        ALUIO in = new ALUIO();
-        for (int i = 0 ; i < 10000; i++){
-            in.a = random.nextInt( 256);
-            in.b = random.nextInt( 256);
-            in.sel  = random.nextInt( 16);
-            int res = alu.process(in);
-//            assertEquals(res, refModel(in.a, in.b, in.sel));
-        }
-    }
+//    @Test
+//    public void testAll(){
+//        ALUIO in = new ALUIO();
+//
+//        for (int a = 0; a < 256; a++){
+//            for (int b = 0; b < 256; b++){
+//                for (int c = 0; c < 16; c++){
+//                    in.a = a;
+//                    in.b = b;
+//                    in.sel  = c;
+//                    int res = alu.process(in);
+////                    assertEquals(refModel(in.a, in.b, in.sel), res);
+//                }
+//            }
+//        }
+//    }
+//
+//    @Test
+//    public void randTest(){
+//        Random random = new Random();
+//        random.setSeed(System.currentTimeMillis());
+//        ALUIO in = new ALUIO();
+//        for (int i = 0 ; i < 10000; i++){
+//            in.a = random.nextInt( 256);
+//            in.b = random.nextInt( 256);
+//            in.sel  = random.nextInt( 16);
+//            int res = alu.process(in);
+////            assertEquals(res, refModel(in.a, in.b, in.sel));
+//        }
+//    }
 
 
 

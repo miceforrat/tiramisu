@@ -79,4 +79,16 @@ picker export --autobuild=true $(VSRC_DIR)/$(NAME).v \
 
 找到对应模块名的jar包，放入lib目录下，或者通过maven安装到本地仓库。
 
-如果放入lib目录下，可以在**pom.xml**中添加以下内容
+如果放入lib目录下，可以在**pom.xml**中添加以下内容：
+
+<dependency>
+    <groupId>com.ut</groupId>
+    <artifactId>YOUR_MODULE_NAME</artifactId>
+    <version>YOUR_VERSION</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/lib/YOUR_JAR_NAME.jar</systemPath>
+</dependency>
+
+## 使用：注解
+
+我们的框架支持使用注解进行抽象数据结构到模拟器接口的绑定

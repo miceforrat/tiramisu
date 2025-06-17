@@ -1,3 +1,4 @@
+
 module ALU(
 	input  [7:0] a,
 	input  [7:0] b,				//alu数据输入
@@ -32,3 +33,4 @@ always@(*)	begin
     endcase
 end
 endmodule
+

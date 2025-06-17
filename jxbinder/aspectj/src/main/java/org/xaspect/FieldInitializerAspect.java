@@ -80,7 +80,7 @@ public class FieldInitializerAspect {
         try {
             // 使用反射加载生成的实现类
             Class<?> implClass = Class.forName(implClassName);
-            System.out.println(implClassName);
+//            System.out.println(implClassName);
             DUTDao<?> wrapperImpl = (DUTDao<?>) implClass.getConstructor().newInstance();
 //            existingDaos.put(implClassName, wrapperImpl);
             return wrapperImpl;
@@ -99,7 +99,7 @@ public class FieldInitializerAspect {
         try {
             // 使用反射加载生成的实现类
             Class<?> implClass = Class.forName(implClassName);
-            System.out.println(implClassName);
+            //System.out.println(implClassName);
             DUTManager<?> managerImpl = (DUTManager<?>) implClass.getConstructor().newInstance();
             return managerImpl;
             // 使用构造方法实例化实现类

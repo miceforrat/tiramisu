@@ -90,7 +90,6 @@ public class PinConnector implements XComponentConnector {
         }
     }
 
-
     private String getBasicTypeBindingStr(TypeMirror typeMirror, String signedBefore) {
         SupportedBasicType type = SupportedBasicType.getSupportedBasicTypes(typeMirror);
         switch (type) {

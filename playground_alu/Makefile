@@ -18,14 +18,14 @@ dut:
 		rm -r picker_out_$(NAME_L); \
 	fi
 
-	$(PICKER) export --autobuild=true $(VSRC_DIR)/$(VSRC_NAME).v \
+	$(PICKER) export --autobuild=false $(VSRC_DIR)/$(VSRC_NAME).v \
 		-w $(TOP_MODULE).$(WAVE_FORMAT) \
 		--sname $(TOP_MODULE) \
 		--tdir picker_out_$(NAME_L) \
 		--lang $(TARGET_LANG) \
 		--sim $(SIM) \
 		-e -c
-	cp -r picker_out_$(NAME_L)/*.jar ./$(LIB_DIR)
+# 	cp -r picker_out_$(NAME_L)/*.jar ./$(LIB_DIR)
 
 run:
 	@mvn test

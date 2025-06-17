@@ -15,7 +15,7 @@ public class DUTNormalManagerBuilder implements DUTManagerBuilder {
 
 
     @Override
-    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement dutManagerElement, AutoDUT dutInfo) {
+    public TypeMirror buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement dutManagerElement, AutoDUT dutInfo) {
         TypeMirror mirror = DUTBindingTool.getInheritingType(dutManagerElement, DUTManager.class);
         TypeName dutTypeName = TypeName.get(mirror);
         FieldSpec dutField = FieldSpec.builder(dutTypeName, DUT_INSTANCE_NAME, Modifier.PRIVATE)
@@ -33,6 +33,7 @@ public class DUTNormalManagerBuilder implements DUTManagerBuilder {
                 .addCode(defaultUtils(dutInfo))
                 .build();
         implClassBuilder.addMethod(constructor);
+        return mirror;
     }
 
 //    @Override

@@ -82,13 +82,14 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
 
         DUTManagerBuilder builder;
+        System.err.println("parsing manager: " + field.asType().toString());
         if (TypeParserHelper.getInstance().directlyImplementsInterface(fieldType, DUTCoroutineManager.class)){
             builder = new DUTCoroutineManagerBuilder();
         } else {
             builder = new DUTNormalManagerBuilder();
         }
 
-        builder.buildConstructor(implClassBuilder, fieldType, autoDUT);
+        TypeMirror managerGenerics = builder.buildConstructor(implClassBuilder, fieldType, autoDUT);
         Map<String, ExecutableElement> executableElementMap = TypeParserHelper.getInstance().collectAllMethods(fieldType);
         Set<String> processedMethods = new HashSet<>();
         for (ExecutableElement method : executableElementMap.values()) {
@@ -108,7 +109,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
 
             // 添加返回值
             if (methodName.equals("getDUT")) {
-                methodBuilder.returns(TypeName.get(DUTBindingTool.getInheritingType(fieldType, DUTManager.class)));
+                methodBuilder.returns(TypeName.get(managerGenerics));
             } else {
                 methodBuilder.returns(TypeName.get(returnType));
             }
@@ -146,7 +147,7 @@ public class AutoDUTProcessor extends AbstractProcessor {
         }
         JavaFile javaFile = JavaFile.builder(packageName, builder.build(implClassBuilder))
                 .build();
-        System.err.println(javaFile);
+//        System.err.println(javaFile);
         try {
             javaFile.writeTo(filer);
         } catch (IOException e) {
@@ -209,7 +210,6 @@ public class AutoDUTProcessor extends AbstractProcessor {
         // 写入生成的类到相同包路径
         JavaFile javaFile = JavaFile.builder(packageName, classBuilder.build(implClassBuilder))
                 .build();
-        System.err.println(javaFile);
         try {
             javaFile.writeTo(filer);
         } catch (IOException e) {

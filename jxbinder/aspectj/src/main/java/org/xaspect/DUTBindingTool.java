@@ -341,7 +341,6 @@ public class DUTBindingTool {
     }
 
     static TypeMirror getInheritingType(TypeElement fieldType, Class<?> inheritingClass) {
-//        Types typeUtils = processingEnv.getTypeUtils();
         Elements elementUtils = processingEnv.getElementUtils();
         TypeElement targetElement = elementUtils.getTypeElement(inheritingClass.getCanonicalName());
         if (targetElement == null) {

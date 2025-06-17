@@ -74,6 +74,7 @@ public class XClockCoroutineManagerImpl implements XClockCoroutineManager {
         }
     }
 
+    @Suspendable
     public void step(int n){
         for (int i = 0; i<n; i++){
             step();
@@ -109,12 +110,12 @@ public class XClockCoroutineManagerImpl implements XClockCoroutineManager {
         this.currentFiber.join();
     }
 
-    @Override
     @Suspendable
     public void awaitCond(Supplier<Boolean> condition) {
-        while (!condition.get()) {
+        do {
             this.step();
-        }
+        } while (!condition.get());
+
     }
 
     //    @Override

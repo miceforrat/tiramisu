@@ -16,10 +16,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ALUWrapper {
 //    UT_ALU alu = new UT_ALU();
-//    UT_ALU alu;
+    UT_ALU alu;
 
-    @AutoDUT(covFileName = "1.dat", waveFileName = "1.fst")
-    ALUManager aluManager;
+//    @AutoDUT(covFileName = "1.dat", waveFileName = "1.fst")
+//    ALUManager aluManager;
+    Semaphore stop = new Semaphore(0);
 
 //    XClockManager cm = XClockManagerFactory.getXClockManager(alu.xclock);
 
@@ -28,31 +29,34 @@ public class ALUWrapper {
 //    ALUTestWrapper aluTestWrapper = new ALUTestWrapperImpl1();
 
     ALUWrapper() {
-//        Semaphore sem = new Semaphore(0);
-//        new Thread(() -> {
-//            this.alu = new UT_ALU();
-//            sem.release();
-//        }).start();
-//        sem.acquireUninterruptibly();
-        aluDutDao.bind(aluManager.getDUT());
+        Semaphore sem = new Semaphore(0);
+        new Thread(() -> {
+            this.alu = new UT_ALU();
+            sem.release();
 
+            stop.acquireUninterruptibly();
+            this.alu.Finish();
+        }).start();
+        sem.acquireUninterruptibly();
+//        aluDutDao.bind(alu);
+        alu.Step();
     }
 
     public void clear(){
-        this.aluManager.finish();
-
+//        this.aluManager.finish();
+//        this.alu.Finish();
+        stop.release();
     }
 
 //    @AgentMethod(refClazz = ALURef.class, refMethodName = "refModel")
-    @RefWithInsMethod(methodId = "alu")
+//    @RefWithInsMethod(methodId = "alu")
     public int process(ALUIO in) {
 
-        aluDutDao.setAb(in.a, in.b);
-        aluDutDao.setSel(in.sel);
-        aluManager.getXClockManager().step();
-//        cm.Step();
-        int res = aluDutDao.getOut();
-        return res;
+//        alu
+//        aluDutDao.setSel(in.sel);
+//        this.alu.Step();
+        return 1;
+//        return aluDutDao.getOut();
     }
 
 

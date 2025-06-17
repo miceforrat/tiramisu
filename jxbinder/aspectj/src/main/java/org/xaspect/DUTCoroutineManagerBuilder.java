@@ -18,7 +18,7 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
     private static final String SINGLE_THREAD_EXECUTOR_SERVICE_NAME = "singleThreadExecutorScheduler";
 
     @Override
-    public void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement dutManagerElement, AutoDUT dutInfo) {
+    public TypeMirror buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement dutManagerElement, AutoDUT dutInfo) {
         implClassBuilder.addJavadoc("⚠ This class depends on the Quasar runtime.\n" +
                 "Ensure your project includes the following dependency:\n\n" +
                 "        <dependency>\n" +
@@ -30,7 +30,8 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
                 "See: https://github.com/puniverse/quasar");
 
         // 1. 提取类型
-        TypeMirror mirror = DUTBindingTool.getInheritingType(dutManagerElement, DUTManager.class);
+        System.err.println("in coroutine manager extraction...");
+        TypeMirror mirror = DUTBindingTool.getInheritingType(dutManagerElement, DUTCoroutineManager.class);
         TypeName dutTypeName = TypeName.get(mirror);
         String dutNameRemovePoint = dutTypeName.toString().replace(".", "");
 //        instanceFieldName = dutNameRemovePoint + "Instance";
@@ -65,7 +66,7 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
                         .addStatement("$T<?> creator = new $T<>(scheduler, () -> {", Fiber.class, Fiber.class)
                         .indent()
                         .addStatement("$L = new $T()", DUT_INSTANCE_NAME, dutTypeName)
-                        .addStatement("System.err.println(Thread.currentThread().getName())")
+                        .addStatement("System.err.println(\"creating dut on thread: \" + Thread.currentThread().getName())")
                         .addStatement("$N = $T.getXClockCoroutineManager($N.xclock, $N)", CLOCK_MANAGER_NAME, XClockManagerFactory.class, DUT_INSTANCE_NAME, SCHEDULER_NAME)
                         .addStatement("$N = new $T($N, $N)", SERVICE_RUNNER_NAME, ServiceRunner.class, CLOCK_MANAGER_NAME, SCHEDULER_NAME)
                         .add(defaultUtils(dutInfo))
@@ -79,6 +80,7 @@ public class DUTCoroutineManagerBuilder implements DUTManagerBuilder {
                         .build())
                 .build();
         implClassBuilder.addMethod(constructor);
+        return mirror;
     }
 
     @Override

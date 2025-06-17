@@ -4,6 +4,7 @@ import com.squareup.javapoet.*;
 
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 
 public interface DUTManagerBuilder {
 
@@ -11,7 +12,7 @@ public interface DUTManagerBuilder {
 
     String DUT_INSTANCE_NAME="dutInstance";
 
-    void buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement dutManagerElement, AutoDUT dutInfo);
+    TypeMirror buildConstructor(TypeSpec.Builder implClassBuilder, TypeElement dutManagerElement, AutoDUT dutInfo);
 
 //    void buildStep(String term, MethodSpec.Builder methodBuilder);
 //
